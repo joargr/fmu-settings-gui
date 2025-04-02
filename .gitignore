@@ -23,6 +23,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+static/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -91,7 +92,9 @@ venv.bak/
 /site
 
 # vscode
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 
 # setuptools_scm version
 _version.py
