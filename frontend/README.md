@@ -128,8 +128,9 @@ tracked and needs to be commited.
 
 There are two tools configured to do formatting and linting of the TypeScript code:
 
-- [Biome](https://biomejs.dev/): Does formatting and general linting
-- [ESLint](https://eslint.org/): Does type-checked linting
+- [Biome toolchain](https://biomejs.dev/): Does formatting and general linting
+- [ESLint](https://eslint.org/) with [typescript-eslint](https://typescript-eslint.io/):
+  Does type-checked linting
 
 When installing and using the recommended extensions for Visual Studio Code (see above),
 formatting and linting will happen during editing and saving of each file. In addition,
