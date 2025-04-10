@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
+import { client } from "./client/client.gen";
 import { routeTree } from "./routeTree.gen";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,12 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
+
+client.setConfig({
+  headers: {
+    "x-fmu-settings-api": "...",
+  },
+});
 
 const rootElement = document.getElementById("root");
 if (rootElement && !rootElement.innerHTML) {

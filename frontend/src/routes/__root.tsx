@@ -6,11 +6,15 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
 }>()({
-  component: () => (
+  component: Root,
+});
+
+function Root() {
+  return (
     <>
       <Outlet />
       <TanStackRouterDevtools />
       <ReactQueryDevtools />
     </>
-  ),
-});
+  );
+}

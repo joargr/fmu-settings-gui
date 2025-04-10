@@ -106,3 +106,17 @@ access from an application running on localhost on that port. The command also p
 complete URL for the frontend application, including the authorization token. The URL can
 be opened in the web browser, and as the URL contains the token the API access will be
 authorized and communication will work as expected.
+
+### Updating API endpoints and models
+
+Whenever there are been updates to the API endpoints and models, a tool can be used to
+update the frontend code:
+
+```shell
+$ pnpm openapi-ts
+```
+
+This command will get the API's `openapi.json` specification file, and create TypeScript
+code for the various endpoints as well as the models. The code is placed in the
+`frontend/src/client` directory, and is part of the repo. Any changes will thus be
+tracked and needs to be commited.
