@@ -75,6 +75,7 @@ the API is needed, so initially the web page won't show any content.
 The web server is running with Hot Module Replacement, so any changes done to the TypeScript
 and CSS files will be reflected in the running application.
 
+
 ### FMU Settings
 
 This frontend application is part of the FMU Settings applications: The CLI application
@@ -107,6 +108,7 @@ complete URL for the frontend application, including the authorization token. Th
 be opened in the web browser, and as the URL contains the token the API access will be
 authorized and communication will work as expected.
 
+
 ### Updating API endpoints and models
 
 Whenever there are been updates to the API endpoints and models, a tool can be used to
@@ -120,3 +122,22 @@ This command will get the API's `openapi.json` specification file, and create Ty
 code for the various endpoints as well as the models. The code is placed in the
 `frontend/src/client` directory, and is part of the repo. Any changes will thus be
 tracked and needs to be commited.
+
+
+### Formatting and linting
+
+There are two tools configured to do formatting and linting of the TypeScript code:
+
+- [Biome](https://biomejs.dev/): Does formatting and general linting
+- [ESLint](https://eslint.org/): Does type-checked linting
+
+When installing and using the recommended extensions for Visual Studio Code (see above),
+formatting and linting will happen during editing and saving of each file. In addition,
+this can be done for all files, using the following command:
+
+```shell
+$ pnpm lint
+```
+
+When a pull request is created, the CI workflow checks for formatting and linting issues, so any such
+issues should be dealt with before code is commited.
