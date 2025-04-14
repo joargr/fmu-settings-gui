@@ -4,14 +4,26 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { client } from "./client/client.gen";
 import { routeTree } from "./routeTree.gen";
+import { getApiToken } from "./utils/authentication";
 
 const queryClient = new QueryClient();
 
+const apiToken = getApiToken();
+if (apiToken !== "") {
+  client.setConfig({
+    headers: {
+      "x-fmu-settings-api": apiToken,
+    },
+  });
+  history.pushState(
+    null,
+    "",
+    window.location.pathname + window.location.search,
+  );
+}
+
 const router = createRouter({
   routeTree,
-  context: {
-    queryClient,
-  },
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
@@ -24,12 +36,6 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
-
-client.setConfig({
-  headers: {
-    "x-fmu-settings-api": "...",
-  },
-});
 
 const rootElement = document.getElementById("root");
 if (rootElement && !rootElement.innerHTML) {
