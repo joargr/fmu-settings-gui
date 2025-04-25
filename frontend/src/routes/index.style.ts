@@ -1,11 +1,26 @@
 import styled from "styled-components";
 
 export const AppContainer = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: min-content auto;
+  grid-template-rows: min-content auto;
+  grid-template-areas: 
+    "header header"
+    "sidebar content";
   height: 100vh;
-`;
 
-export const ContentContainer = styled.div`
-  overflow: scroll;
+  .header {
+    grid-area: header;
+  }
+
+  .sidebar {
+    grid-area: sidebar;
+    overflow: scroll;
+  }
+
+  .content {
+    grid-area: content;
+    overflow: scroll;
+    padding: 24px;
+  }
 `;

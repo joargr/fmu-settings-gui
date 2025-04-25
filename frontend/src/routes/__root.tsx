@@ -7,8 +7,9 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import { Header } from "../components/Header";
+import { Sidebar } from "../components/Sidebar";
 import GlobalStyle from "../styles/global";
-import { AppContainer, ContentContainer } from "./index.style";
+import { AppContainer } from "./index.style";
 
 export const Route = createRootRoute({
   component: Root,
@@ -26,11 +27,15 @@ function Root() {
       <GlobalStyle />
 
       <AppContainer>
-        <Header />
-
-        <ContentContainer>
+        <div className="header">
+          <Header />
+        </div>
+        <div className="sidebar">
+          <Sidebar />
+        </div>
+        <div className="content">
           <Outlet />
-        </ContentContainer>
+        </div>
       </AppContainer>
 
       <TanStackRouterDevtools />

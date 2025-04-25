@@ -1,8 +1,8 @@
-import { Button, TopBar } from "@equinor/eds-core-react";
+import { Button, TopBar, Typography } from "@equinor/eds-core-react";
 import { Link } from "@tanstack/react-router";
 
 import fmuLogo from "../assets/fmu_logo.png";
-import { AppTitle, FmuLogo, HeaderContainer } from "./Header.style";
+import { FmuLogo, HeaderContainer } from "./Header.style";
 
 export function Header() {
   return (
@@ -17,7 +17,7 @@ export function Header() {
           >
             <FmuLogo src={fmuLogo} />
           </Button>
-          <AppTitle>FMU Settings</AppTitle>
+          <Typography variant="h1_bold">FMU Settings</Typography>
         </TopBar.Header>
       </TopBar>
     </HeaderContainer>

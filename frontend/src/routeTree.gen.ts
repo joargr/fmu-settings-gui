@@ -12,12 +12,40 @@
 
 import { Route as rootRoute } from "./routes/__root";
 import { Route as IndexImport } from "./routes/index";
+import { Route as MappingsIndexImport } from "./routes/mappings/index";
+import { Route as GeneralIndexImport } from "./routes/general/index";
+import { Route as DirectoryIndexImport } from "./routes/directory/index";
+import { Route as GeneralSmdaImport } from "./routes/general/smda";
 
 // Create/Update Routes
 
 const IndexRoute = IndexImport.update({
   id: "/",
   path: "/",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const MappingsIndexRoute = MappingsIndexImport.update({
+  id: "/mappings/",
+  path: "/mappings/",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const GeneralIndexRoute = GeneralIndexImport.update({
+  id: "/general/",
+  path: "/general/",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const DirectoryIndexRoute = DirectoryIndexImport.update({
+  id: "/directory/",
+  path: "/directory/",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const GeneralSmdaRoute = GeneralSmdaImport.update({
+  id: "/general/smda",
+  path: "/general/smda",
   getParentRoute: () => rootRoute,
 } as any);
 
@@ -32,6 +60,34 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof IndexImport;
       parentRoute: typeof rootRoute;
     };
+    "/general/smda": {
+      id: "/general/smda";
+      path: "/general/smda";
+      fullPath: "/general/smda";
+      preLoaderRoute: typeof GeneralSmdaImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/directory/": {
+      id: "/directory/";
+      path: "/directory";
+      fullPath: "/directory";
+      preLoaderRoute: typeof DirectoryIndexImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/general/": {
+      id: "/general/";
+      path: "/general";
+      fullPath: "/general";
+      preLoaderRoute: typeof GeneralIndexImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/mappings/": {
+      id: "/mappings/";
+      path: "/mappings";
+      fullPath: "/mappings";
+      preLoaderRoute: typeof MappingsIndexImport;
+      parentRoute: typeof rootRoute;
+    };
   }
 }
 
@@ -39,32 +95,58 @@ declare module "@tanstack/react-router" {
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/general/smda": typeof GeneralSmdaRoute;
+  "/directory": typeof DirectoryIndexRoute;
+  "/general": typeof GeneralIndexRoute;
+  "/mappings": typeof MappingsIndexRoute;
 }
 
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/general/smda": typeof GeneralSmdaRoute;
+  "/directory": typeof DirectoryIndexRoute;
+  "/general": typeof GeneralIndexRoute;
+  "/mappings": typeof MappingsIndexRoute;
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute;
   "/": typeof IndexRoute;
+  "/general/smda": typeof GeneralSmdaRoute;
+  "/directory/": typeof DirectoryIndexRoute;
+  "/general/": typeof GeneralIndexRoute;
+  "/mappings/": typeof MappingsIndexRoute;
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/";
+  fullPaths: "/" | "/general/smda" | "/directory" | "/general" | "/mappings";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/";
-  id: "__root__" | "/";
+  to: "/" | "/general/smda" | "/directory" | "/general" | "/mappings";
+  id:
+    | "__root__"
+    | "/"
+    | "/general/smda"
+    | "/directory/"
+    | "/general/"
+    | "/mappings/";
   fileRoutesById: FileRoutesById;
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  GeneralSmdaRoute: typeof GeneralSmdaRoute;
+  DirectoryIndexRoute: typeof DirectoryIndexRoute;
+  GeneralIndexRoute: typeof GeneralIndexRoute;
+  MappingsIndexRoute: typeof MappingsIndexRoute;
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GeneralSmdaRoute: GeneralSmdaRoute,
+  DirectoryIndexRoute: DirectoryIndexRoute,
+  GeneralIndexRoute: GeneralIndexRoute,
+  MappingsIndexRoute: MappingsIndexRoute,
 };
 
 export const routeTree = rootRoute
@@ -77,11 +159,27 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/"
+        "/",
+        "/general/smda",
+        "/directory/",
+        "/general/",
+        "/mappings/"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/general/smda": {
+      "filePath": "general/smda.tsx"
+    },
+    "/directory/": {
+      "filePath": "directory/index.tsx"
+    },
+    "/general/": {
+      "filePath": "general/index.tsx"
+    },
+    "/mappings/": {
+      "filePath": "mappings/index.tsx"
     }
   }
 }
