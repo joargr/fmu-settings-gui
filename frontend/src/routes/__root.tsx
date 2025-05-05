@@ -6,6 +6,11 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
+import { Header } from "../components/Header";
+import { Sidebar } from "../components/Sidebar";
+import GlobalStyle from "../styles/global";
+import { AppContainer } from "./index.style";
+
 export const Route = createRootRoute({
   component: Root,
   notFoundComponent: () => {
@@ -19,7 +24,20 @@ export const Route = createRootRoute({
 function Root() {
   return (
     <>
-      <Outlet />
+      <GlobalStyle />
+
+      <AppContainer>
+        <div className="header">
+          <Header />
+        </div>
+        <div className="sidebar">
+          <Sidebar />
+        </div>
+        <div className="content">
+          <Outlet />
+        </div>
+      </AppContainer>
+
       <TanStackRouterDevtools />
       <ReactQueryDevtools />
     </>

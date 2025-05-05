@@ -5,7 +5,13 @@ import { defineConfig } from "vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    TanStackRouterVite({ target: "react", quoteStyle: "double", semicolons: true, autoCodeSplitting: true }),
+    TanStackRouterVite({
+      target: "react",
+      routeFileIgnorePattern: ".style.ts",
+      quoteStyle: "double",
+      semicolons: true,
+      autoCodeSplitting: true,
+    }),
     react(),
   ],
 });

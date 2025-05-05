@@ -54,10 +54,10 @@ versions, so care should be taken when upgrading the program.
 
 The repo contains configuration files for Visual Studio Code, with
 [recommendations](../.vscode/extensions.json) for installing extensions for Biome
-toolchain (formatting and linting) and ESLint. Furthermore, there is a workspace
-[settings](../.vscode/settings.json) file that configures Biome as the default formatter
-for JavaScript and TypeScript files (includeing JSX/TSX), as well as CSS/SCSS/JSON files.
-Formatting is set up to be done on save.
+toolchain (formatting and linting), ESLint and styled-components. Furthermore, there is a
+workspace [settings](../.vscode/settings.json) file that configures Biome as the default
+formatter for JavaScript and TypeScript files (includeing JSX/TSX), as well as
+CSS/SCSS/JSON files. Formatting is set up to be done on save.
 
 
 ## Developing

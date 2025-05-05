@@ -1,27 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { Typography } from "@equinor/eds-core-react";
 import { createFileRoute } from "@tanstack/react-router";
 
-import fmuLogo from "../assets/fmu_logo_full.svg";
-import "../main.css";
-import { v1V1HealthCheckOptions } from "../client/@tanstack/react-query.gen";
-
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: RouteComponent,
 });
 
-function Index() {
-  const { data } = useQuery({
-    ...v1V1HealthCheckOptions(),
-  });
-
+function RouteComponent() {
   return (
     <>
-      <div>
-        <img src={fmuLogo} className="logo" alt="FMU logo" />
-      </div>
-      <h1>FMU Settings</h1>
+      <Typography variant="h2">FMU Settings</Typography>
 
-      <p>Health: {data?.status}</p>
+      <Typography variant="ingress">
+        This is an application for managing the settings of FMU projects.
+      </Typography>
     </>
   );
 }

@@ -2,5 +2,6 @@
     "recommendations": [
         "biomejs.biome",
         "dbaeumer.vscode-eslint",
+        "styled-components.vscode-styled-components",
     ]
 }
