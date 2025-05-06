@@ -6,6 +6,8 @@ export const Route = createFileRoute("/")({
 });
 
 function RouteComponent() {
+  const { currentDirectory } = Route.useRouteContext();
+
   return (
     <>
       <Typography variant="h2">FMU Settings</Typography>
@@ -13,6 +15,8 @@ function RouteComponent() {
       <Typography variant="ingress">
         This is an application for managing the settings of FMU projects.
       </Typography>
+
+      <p>Current directory: {currentDirectory}</p>
     </>
   );
 }
