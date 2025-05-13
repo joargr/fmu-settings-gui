@@ -13,15 +13,26 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { RouterContext } from "../main";
 import GlobalStyle from "../styles/global";
+import { getApiToken, isApiToken } from "../utils/authentication";
 import { AppContainer } from "./index.style";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  beforeLoad: ({ location, context }) => {
-    if (location.pathname !== "/directory" && context.currentDirectory === "") {
-      redirect({ to: "/directory", throw: true });
+  beforeLoad: ({ context, location, matches }) => {
+    const apiToken = context.apiToken || getApiToken();
+    if (isApiToken(apiToken)) {
+      if (apiToken !== context.apiToken) {
+        context.setApiToken(apiToken);
+      }
+      if (
+        matches.length > 1 && // don't redirect when route not found (matching only root route)
+        context.currentDirectory === "" &&
+        location.pathname !== "/directory"
+      ) {
+        redirect({ to: "/directory", throw: true });
+      }
     }
   },
-  component: Root,
+  component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ({ error }) => StandardErrorComponent(error),
 });
@@ -40,7 +51,13 @@ function StandardErrorComponent(error: Error) {
   return <ErrorComponent error={error} />;
 }
 
-function Root() {
+function RootComponent() {
+  const { apiToken } = Route.useRouteContext();
+
+  if (!isApiToken(apiToken)) {
+    return <div>Missing token</div>;
+  }
+
   return (
     <>
       <GlobalStyle />

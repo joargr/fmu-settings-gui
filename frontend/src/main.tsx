@@ -11,38 +11,29 @@ import ReactDOM from "react-dom/client";
 
 import { client } from "./client/client.gen";
 import { routeTree } from "./routeTree.gen";
-import { getApiToken } from "./utils/authentication";
+import { isApiToken } from "./utils/authentication";
 
 export interface RouterContext {
+  apiToken: string;
+  setApiToken: Dispatch<SetStateAction<string>>;
   currentDirectory: string;
   setCurrentDirectory: Dispatch<SetStateAction<string>>;
 }
 
 const queryClient = new QueryClient();
 
-const apiToken = getApiToken();
-if (apiToken !== "") {
-  client.setConfig({
-    headers: {
-      "x-fmu-settings-api": apiToken,
-    },
-  });
-  history.pushState(
-    null,
-    "",
-    window.location.pathname + window.location.search,
-  );
-}
-
 const router = createRouter({
   routeTree,
   context: {
+    apiToken: undefined!,
+    setApiToken: undefined!,
     currentDirectory: undefined!,
     setCurrentDirectory: undefined!,
   },
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
+  notFoundMode: "root",
 });
 
 // Register the router instance for type safety
@@ -54,15 +45,26 @@ declare module "@tanstack/react-router" {
 }
 
 export function App() {
+  const [apiToken, setApiToken] = useState<string>("");
   const [currentDirectory, setCurrentDirectory] = useState<string>("");
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: currentDirectory will indeed be invalidated
-  useEffect(() => void router.invalidate(), [currentDirectory]);
+  useEffect(() => void router.invalidate(), [apiToken, currentDirectory]);
+
+  useEffect(() => {
+    if (isApiToken(apiToken)) {
+      client.setConfig({
+        headers: {
+          "x-fmu-settings-api": apiToken,
+        },
+      });
+    }
+  }, [apiToken]);
 
   return (
     <RouterProvider
       router={router}
-      context={{ currentDirectory, setCurrentDirectory }}
+      context={{ apiToken, setApiToken, currentDirectory, setCurrentDirectory }}
     />
   );
 }
