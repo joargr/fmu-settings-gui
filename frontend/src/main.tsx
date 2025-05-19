@@ -3,12 +3,14 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { Dispatch, SetStateAction, StrictMode, useState } from "react";
 import ReactDOM from "react-dom/client";
 
+import { TokenStatus } from "./enums";
 import { routeTree } from "./routeTree.gen";
 
 export interface RouterContext {
   queryClient: QueryClient;
   apiToken: string;
   setApiToken: Dispatch<SetStateAction<string>>;
+  apiTokenStatus?: TokenStatus;
   projectDirNotFound: boolean;
 }
 

@@ -17,6 +17,7 @@ import {
 import { client } from "../client/client.gen";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
+import { TokenStatus } from "../enums";
 import { RouterContext } from "../main";
 import GlobalStyle from "../styles/global";
 import { getApiToken, isApiToken } from "../utils/authentication";
@@ -24,9 +25,12 @@ import { AppContainer } from "./index.style";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context, location, matches }) => {
+    let apiTokenStatus: TokenStatus;
     let projectDirNotFound = false;
+
     const apiToken = context.apiToken || getApiToken();
     if (isApiToken(apiToken)) {
+      apiTokenStatus = TokenStatus.OK;
       if (apiToken !== context.apiToken) {
         client.setConfig({
           headers: {
@@ -54,6 +58,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
             if (axios.isAxiosError(error)) {
               if (error.status === 404) {
                 projectDirNotFound = true;
+              } else if (error.status === 401) {
+                apiTokenStatus = TokenStatus.INVALID;
               } else {
                 console.error("      GET /fmu error =", error);
               }
@@ -69,9 +75,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       ) {
         redirect({ to: "/directory", throw: true });
       }
+    } else {
+      apiTokenStatus = TokenStatus.MISSING;
     }
 
     return {
+      apiTokenStatus,
       projectDirNotFound,
     };
   },
@@ -95,10 +104,15 @@ function StandardErrorComponent(error: Error) {
 }
 
 function RootComponent() {
-  const { apiToken } = Route.useRouteContext();
+  const { apiTokenStatus } = Route.useRouteContext();
 
-  if (!isApiToken(apiToken)) {
-    return <div>Missing token</div>;
+  if ([TokenStatus.MISSING, TokenStatus.INVALID].includes(apiTokenStatus)) {
+    return (
+      <div>
+        {apiTokenStatus === TokenStatus.MISSING ? "Missing" : "Invalid"} token,
+        please close browser tab and open URL again
+      </div>
+    );
   }
 
   return (
