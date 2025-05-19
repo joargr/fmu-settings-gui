@@ -1,26 +1,42 @@
 import { Button, Typography } from "@equinor/eds-core-react";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { v1GetCwdFmuDirectorySessionOptions } from "../../client/@tanstack/react-query.gen";
 
 export const Route = createFileRoute("/directory/")({
   component: RouteComponent,
 });
 
+function ProjectDirSelection() {
+  return (
+    <Typography>
+      Enter project directory: <input /> <Button>Submit</Button>
+    </Typography>
+  );
+}
+
+function ProjectDirInfo() {
+  const { data } = useQuery(v1GetCwdFmuDirectorySessionOptions());
+  return (
+    <Typography>
+      Current project: <strong>{data?.project_dir_name}</strong>
+      <br />
+      Current path: {data?.path}
+    </Typography>
+  );
+}
+
 function RouteComponent() {
-  const { currentDirectory, setCurrentDirectory } = Route.useRouteContext();
+  const { projectDirNotFound } = Route.useRouteContext();
 
   return (
     <>
       <Typography variant="h2">Directory</Typography>
 
-      <Typography>Current directory: {currentDirectory}</Typography>
+      {projectDirNotFound && <ProjectDirSelection />}
 
-      <Button
-        onClick={() => {
-          setCurrentDirectory("/tmp");
-        }}
-      >
-        Set current directory
-      </Button>
+      {!projectDirNotFound && <ProjectDirInfo />}
     </>
   );
 }

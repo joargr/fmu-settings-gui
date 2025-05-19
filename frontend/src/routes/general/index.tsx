@@ -1,10 +1,31 @@
 import { Typography } from "@equinor/eds-core-react";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { v1GetCwdFmuDirectorySessionOptions } from "../../client/@tanstack/react-query.gen";
+import { displayDateTime } from "../../utils/datetime";
 
 export const Route = createFileRoute("/general/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  return <Typography variant="h2">General</Typography>;
+  const { data } = useQuery(v1GetCwdFmuDirectorySessionOptions());
+
+  return (
+    <>
+      <Typography variant="h2">General</Typography>
+
+      <Typography>
+        Project: <strong>{data?.project_dir_name}</strong>
+        <br />
+        Path: {data?.path}
+        <br />
+        Created: {displayDateTime(data?.config.created_at ?? "")} by{" "}
+        {data?.config.created_by}
+        <br />
+        Version: {data?.config.version}
+      </Typography>
+    </>
+  );
 }

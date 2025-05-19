@@ -1,12 +1,15 @@
 import { Typography } from "@equinor/eds-core-react";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { v1GetCwdFmuDirectorySessionOptions } from "../client/@tanstack/react-query.gen";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { currentDirectory } = Route.useRouteContext();
+  const { data } = useQuery(v1GetCwdFmuDirectorySessionOptions());
 
   return (
     <>
@@ -16,7 +19,11 @@ function RouteComponent() {
         This is an application for managing the settings of FMU projects.
       </Typography>
 
-      <p>Current directory: {currentDirectory}</p>
+      <Typography>
+        Current project: <strong>{data?.project_dir_name}</strong>
+        <br />
+        Current path: {data?.path}
+      </Typography>
     </>
   );
 }

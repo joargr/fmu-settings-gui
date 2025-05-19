@@ -1,34 +1,32 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import {
-  Dispatch,
-  SetStateAction,
-  StrictMode,
-  useEffect,
-  useState,
-} from "react";
+import { Dispatch, SetStateAction, StrictMode, useState } from "react";
 import ReactDOM from "react-dom/client";
 
-import { client } from "./client/client.gen";
 import { routeTree } from "./routeTree.gen";
-import { isApiToken } from "./utils/authentication";
 
 export interface RouterContext {
+  queryClient: QueryClient;
   apiToken: string;
   setApiToken: Dispatch<SetStateAction<string>>;
-  currentDirectory: string;
-  setCurrentDirectory: Dispatch<SetStateAction<string>>;
+  projectDirNotFound: boolean;
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 300000,
+    },
+  },
+});
 
 const router = createRouter({
   routeTree,
   context: {
+    queryClient,
     apiToken: undefined!,
     setApiToken: undefined!,
-    currentDirectory: undefined!,
-    setCurrentDirectory: undefined!,
+    projectDirNotFound: false,
   },
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
@@ -46,25 +44,14 @@ declare module "@tanstack/react-router" {
 
 export function App() {
   const [apiToken, setApiToken] = useState<string>("");
-  const [currentDirectory, setCurrentDirectory] = useState<string>("");
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: currentDirectory will indeed be invalidated
-  useEffect(() => void router.invalidate(), [apiToken, currentDirectory]);
-
-  useEffect(() => {
-    if (isApiToken(apiToken)) {
-      client.setConfig({
-        headers: {
-          "x-fmu-settings-api": apiToken,
-        },
-      });
-    }
-  }, [apiToken]);
 
   return (
     <RouterProvider
       router={router}
-      context={{ apiToken, setApiToken, currentDirectory, setCurrentDirectory }}
+      context={{
+        apiToken,
+        setApiToken,
+      }}
     />
   );
 }

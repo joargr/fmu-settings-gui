@@ -7,8 +7,14 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import axios from "axios";
 import { useEffect } from "react";
 
+import {
+  v1GetCwdFmuDirectorySessionOptions,
+  v1GetCwdFmuDirectorySessionQueryKey,
+} from "../client/@tanstack/react-query.gen";
+import { client } from "../client/client.gen";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { RouterContext } from "../main";
@@ -17,20 +23,57 @@ import { getApiToken, isApiToken } from "../utils/authentication";
 import { AppContainer } from "./index.style";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  beforeLoad: ({ context, location, matches }) => {
+  beforeLoad: async ({ context, location, matches }) => {
+    let projectDirNotFound = false;
     const apiToken = context.apiToken || getApiToken();
     if (isApiToken(apiToken)) {
       if (apiToken !== context.apiToken) {
+        client.setConfig({
+          headers: {
+            "x-fmu-settings-api": apiToken,
+          },
+        });
         context.setApiToken(apiToken);
       }
+
+      const projectDirQueryState = context.queryClient.getQueryState(
+        v1GetCwdFmuDirectorySessionQueryKey(),
+      );
       if (
-        matches.length > 1 && // don't redirect when route not found (matching only root route)
-        context.currentDirectory === "" &&
+        projectDirQueryState !== undefined &&
+        projectDirQueryState.status === "error" &&
+        axios.isAxiosError(projectDirQueryState.error) &&
+        projectDirQueryState.error.status === 404
+      ) {
+        projectDirNotFound = true;
+      }
+      if (projectDirQueryState === undefined || !projectDirNotFound) {
+        await context.queryClient
+          .fetchQuery(v1GetCwdFmuDirectorySessionOptions())
+          .catch((error: unknown) => {
+            if (axios.isAxiosError(error)) {
+              if (error.status === 404) {
+                projectDirNotFound = true;
+              } else {
+                console.error("      GET /fmu error =", error);
+              }
+            } else {
+              console.error("Unknown error getting FMU directory: ", error);
+            }
+          });
+      }
+      if (
+        projectDirNotFound &&
+        matches.length > 1 && // don't redirect when route not found (when matching only root route)
         location.pathname !== "/directory"
       ) {
         redirect({ to: "/directory", throw: true });
       }
     }
+
+    return {
+      projectDirNotFound,
+    };
   },
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
