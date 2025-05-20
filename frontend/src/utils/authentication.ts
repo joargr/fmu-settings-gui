@@ -15,10 +15,19 @@ export function getApiToken(): string {
   const storageToken = sessionStorage.getItem(STORAGETOKEN_NAME) ?? "";
   if (fragmentToken !== "") {
     sessionStorage.setItem(STORAGETOKEN_NAME, fragmentToken);
+    history.pushState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
     return fragmentToken;
   } else if (storageToken !== "") {
     return storageToken;
   } else {
     return "";
   }
+}
+
+export function isApiToken(apiToken: string): boolean {
+  return apiToken !== "";
 }
