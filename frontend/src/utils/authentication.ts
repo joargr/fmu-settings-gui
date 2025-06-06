@@ -1,5 +1,18 @@
+import { UseMutateAsyncFunction } from "@tanstack/react-query";
+import { AxiosError, AxiosResponse } from "axios";
+import { Dispatch, SetStateAction } from "react";
+
+import { Message, Options, V1CreateSessionData } from "../client";
+
 const FRAGMENTTOKEN_PREFIX = "#token=";
 const STORAGETOKEN_NAME = "apiToken";
+const APITOKEN_HEADER = "x-fmu-settings-api";
+const APIURL_SESSION = "/api/v1/session/";
+
+export type TokenStatus = {
+  present?: boolean;
+  valid?: boolean;
+};
 
 function getTokenFromFragment(): string {
   const fragment = location.hash;
@@ -10,11 +23,23 @@ function getTokenFromFragment(): string {
   }
 }
 
+function getTokenFromStorage(): string {
+  return sessionStorage.getItem(STORAGETOKEN_NAME) ?? "";
+}
+
+function setTokenInStorage(token: string): void {
+  sessionStorage.setItem(STORAGETOKEN_NAME, token);
+}
+
+export function removeTokenFromStorage(): void {
+  sessionStorage.removeItem(STORAGETOKEN_NAME);
+}
+
 export function getApiToken(): string {
   const fragmentToken = getTokenFromFragment();
-  const storageToken = sessionStorage.getItem(STORAGETOKEN_NAME) ?? "";
+  const storageToken = getTokenFromStorage();
   if (fragmentToken !== "") {
-    sessionStorage.setItem(STORAGETOKEN_NAME, fragmentToken);
+    setTokenInStorage(fragmentToken);
     history.pushState(
       null,
       "",
@@ -28,6 +53,67 @@ export function getApiToken(): string {
   }
 }
 
-export function isApiToken(apiToken: string): boolean {
+export function isApiTokenNonEmpty(apiToken: string): boolean {
   return apiToken !== "";
 }
+
+export function isApiUrlSession(url?: string): boolean {
+  return url === APIURL_SESSION;
+}
+
+async function createSessionAsync(
+  createSessionMutateAsync: UseMutateAsyncFunction<
+    Message,
+    AxiosError,
+    Options<V1CreateSessionData>
+  >,
+  apiToken: string,
+) {
+  await createSessionMutateAsync({
+    headers: { [APITOKEN_HEADER]: apiToken },
+  });
+}
+
+export const responseInterceptorFulfilled =
+  (
+    apiTokenStatusValid: boolean,
+    setApiTokenStatus: Dispatch<SetStateAction<TokenStatus>>,
+  ) =>
+  (response: AxiosResponse): AxiosResponse => {
+    if (isApiUrlSession(response.config.url) && !apiTokenStatusValid) {
+      setApiTokenStatus((apiTokenStatus) => ({
+        ...apiTokenStatus,
+        valid: true,
+      }));
+    }
+    return response;
+  };
+
+export const responseInterceptorRejected =
+  (
+    apiToken: string,
+    setApiToken: Dispatch<SetStateAction<string>>,
+    apiTokenStatusValid: boolean,
+    setApiTokenStatus: Dispatch<SetStateAction<TokenStatus>>,
+    createSessionMutateAsync: UseMutateAsyncFunction<
+      Message,
+      AxiosError,
+      Options<V1CreateSessionData>
+    >,
+  ) =>
+  async (error: AxiosError) => {
+    if (error.status === 401) {
+      if (isApiUrlSession(error.response?.config.url)) {
+        if (isApiTokenNonEmpty(apiToken)) {
+          setApiToken(() => "");
+          removeTokenFromStorage();
+        }
+        if (apiTokenStatusValid) {
+          setApiTokenStatus(() => ({}));
+        }
+      } else {
+        await createSessionAsync(createSessionMutateAsync, apiToken);
+      }
+    }
+    return Promise.reject(error);
+  };
