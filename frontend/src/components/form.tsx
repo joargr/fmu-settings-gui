@@ -28,6 +28,7 @@ import {
   v1GetUserQueryKey,
   v1PatchApiKeyMutation,
 } from "../client/@tanstack/react-query.gen";
+import { queryMutationRetry } from "../utils/authentication";
 import { fieldContext, formContext, useFieldContext } from "../utils/form";
 import { EditableTextFieldFormContainer } from "./form.style";
 
@@ -136,7 +137,13 @@ export function EditableTextFieldForm({
   const { data } = useSuspenseQuery(v1GetUserOptions());
   const { mutate, isPending } = useMutation({
     ...v1PatchApiKeyMutation(),
-    meta: { errorMessage: "Error updating API key" },
+    onSuccess: () => {
+      void queryClient.refetchQueries({
+        queryKey: v1GetUserQueryKey(),
+      });
+    },
+    retry: (failureCount, error) => queryMutationRetry(failureCount, error),
+    meta: { errorPrefix: "Error updating API key" },
   });
 
   let validator: ZodString | undefined;
@@ -166,9 +173,6 @@ export function EditableTextFieldForm({
         {
           onSuccess: (data) => {
             toast.info(data.message);
-            void queryClient.refetchQueries({
-              queryKey: v1GetUserQueryKey(),
-            });
             formApi.reset();
             setIsReadonly(true);
           },
