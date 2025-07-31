@@ -9,9 +9,10 @@ import { Suspense } from "react";
 
 import { UserApiKeys } from "../../client";
 import {
-  v1GetUserOptions,
-  v1GetUserQueryKey,
-  v1PatchApiKeyMutation,
+  smdaGetHealthQueryKey,
+  userGetUserOptions,
+  userGetUserQueryKey,
+  userPatchApiKeyMutation,
 } from "../../client/@tanstack/react-query.gen";
 import { Loading } from "../../components/common";
 import {
@@ -21,7 +22,7 @@ import {
   StringObject,
 } from "../../components/form";
 import { PageHeader, PageSectionSpacer, PageText } from "../../styles/common";
-import { queryMutationRetry } from "../../utils/authentication";
+import { queryAndMutationRetry } from "../../utils/authentication";
 import { KeysFormContainer } from "./keys.style";
 
 export const Route = createFileRoute("/user/keys")({
@@ -44,16 +45,19 @@ function KeysTextFieldForm({
   length,
   minLength,
 }: KeysTextFieldFormProps) {
-  const { data } = useSuspenseQuery(v1GetUserOptions());
+  const { data } = useSuspenseQuery(userGetUserOptions());
   const { mutate, isPending } = useMutation({
-    ...v1PatchApiKeyMutation(),
+    ...userPatchApiKeyMutation(),
     onSuccess: () => {
       void queryClient.refetchQueries({
-        queryKey: v1GetUserQueryKey(),
+        queryKey: userGetUserQueryKey(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: smdaGetHealthQueryKey(),
       });
     },
     retry: (failureCount: number, error: Error) =>
-      queryMutationRetry(failureCount, error),
+      queryAndMutationRetry(failureCount, error),
     meta: { errorPrefix: "Error updating API key" },
   });
 
@@ -102,7 +106,9 @@ function Content() {
         acquire, and which can then be stored through this application.
       </PageText>
 
-      <PageHeader $variant="h3">SMDA</PageHeader>
+      <PageHeader $variant="h3">
+        <span id="smda_subscription">SMDA</span>
+      </PageHeader>
 
       <PageText>
         An SMDA subscription key is needed for querying the{" "}

@@ -15,7 +15,7 @@ import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { ToastContainer } from "react-toastify";
 
-import { v1GetUserOptions } from "../client/@tanstack/react-query.gen";
+import { userGetUserOptions } from "../client/@tanstack/react-query.gen";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { RouterContext } from "../main";
@@ -24,7 +24,7 @@ import GlobalStyle from "../styles/global";
 import {
   getApiToken,
   isApiTokenNonEmpty,
-  queryMutationRetry,
+  queryAndMutationRetry,
 } from "../utils/authentication";
 import { AppContainer } from "./index.style";
 
@@ -46,9 +46,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     if (context.hasResponseInterceptor) {
       await context.queryClient
         .fetchQuery({
-          ...v1GetUserOptions(),
+          ...userGetUserOptions(),
           retry: (failureCount, error) =>
-            queryMutationRetry(failureCount, error),
+            queryAndMutationRetry(failureCount, error),
           meta: { errorPrefix: "Error getting initial user data" },
         })
         .catch(() => undefined);

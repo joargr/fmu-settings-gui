@@ -1,4 +1,11 @@
 import {
+  AuthenticationResult,
+  EventMessage,
+  EventType,
+  PublicClientApplication,
+} from "@azure/msal-browser";
+import { MsalProvider, useMsal } from "@azure/msal-react";
+import {
   MutationCache,
   QueryCache,
   QueryClient,
@@ -18,12 +25,18 @@ import {
 import ReactDOM from "react-dom/client";
 import { toast } from "react-toastify";
 
-import { Message, Options, V1CreateSessionData } from "./client";
-import { v1CreateSessionMutation } from "./client/@tanstack/react-query.gen";
+import { Message, Options, SessionCreateSessionData } from "./client";
+import {
+  sessionCreateSessionMutation,
+  sessionPatchAccessTokenMutation,
+  smdaGetHealthQueryKey,
+} from "./client/@tanstack/react-query.gen";
 import { client } from "./client/client.gen";
+import { msalConfig } from "./config";
 import { routeTree } from "./routeTree.gen";
 import {
   isApiTokenNonEmpty,
+  queryAndMutationRetry,
   responseInterceptorFulfilled,
   responseInterceptorRejected,
   TokenStatus,
@@ -36,11 +49,12 @@ export interface RouterContext {
   apiTokenStatus: TokenStatus;
   setApiTokenStatus: Dispatch<SetStateAction<TokenStatus>>;
   hasResponseInterceptor: boolean;
+  accessToken: string;
   projectDirNotFound: boolean;
   createSessionMutateAsync: UseMutateAsyncFunction<
     Message,
     AxiosError,
-    Options<V1CreateSessionData>
+    Options<SessionCreateSessionData>
   >;
 }
 
@@ -51,16 +65,18 @@ declare module "@tanstack/react-router" {
   }
 }
 
-interface QueryMutationMeta extends Record<string, unknown> {
+interface QueryAndMutationMeta extends Record<string, unknown> {
   errorPrefix?: string;
 }
 
 declare module "@tanstack/react-query" {
   interface Register {
-    queryMeta: QueryMutationMeta;
-    mutationMeta: QueryMutationMeta;
+    queryMeta: QueryAndMutationMeta;
+    mutationMeta: QueryAndMutationMeta;
   }
 }
+
+const msalInstance = new PublicClientApplication(msalConfig);
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -115,6 +131,7 @@ const router = createRouter({
     apiTokenStatus: undefined!,
     setApiTokenStatus: undefined!,
     hasResponseInterceptor: false,
+    accessToken: undefined!,
     projectDirNotFound: false,
     createSessionMutateAsync: undefined!,
   },
@@ -125,13 +142,27 @@ const router = createRouter({
 });
 
 export function App() {
+  const { instance: msalInstance } = useMsal();
   const [apiToken, setApiToken] = useState<string>("");
   const [apiTokenStatus, setApiTokenStatus] = useState<TokenStatus>({});
   const [hasResponseInterceptor, setHasResponseInterceptor] =
     useState<boolean>(false);
+  const [accessToken, setAccessToken] = useState<string>("");
+
   const { mutateAsync: createSessionMutateAsync } = useMutation({
-    ...v1CreateSessionMutation(),
+    ...sessionCreateSessionMutation(),
     meta: { errorPrefix: "Error creating session" },
+  });
+  const { mutate: patchAccessTokenMutate } = useMutation({
+    ...sessionPatchAccessTokenMutation(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: smdaGetHealthQueryKey(),
+      });
+    },
+    retry: (failureCount: number, error: Error) =>
+      queryAndMutationRetry(failureCount, error),
+    meta: { errorPrefix: "Error adding access token to session" },
   });
 
   useEffect(() => {
@@ -159,11 +190,35 @@ export function App() {
     };
   }, [createSessionMutateAsync, apiToken, apiTokenStatus.valid]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Invalidate router context when some of the content changes
   useEffect(() => {
-    if (hasResponseInterceptor) {
-      void router.invalidate();
-    }
-  }, [hasResponseInterceptor]);
+    void router.invalidate();
+  }, [hasResponseInterceptor, accessToken]);
+
+  useEffect(() => {
+    const id = msalInstance.addEventCallback(
+      (event: EventMessage) => {
+        if (event.payload) {
+          const payload = event.payload as AuthenticationResult;
+          if (event.eventType === EventType.LOGIN_SUCCESS) {
+            const account = payload.account;
+            msalInstance.setActiveAccount(account);
+          } else if (event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS) {
+            setAccessToken(payload.accessToken);
+            patchAccessTokenMutate({
+              body: { id: "smda_api", key: payload.accessToken },
+            });
+          }
+        }
+        return () => {
+          if (id !== null) {
+            msalInstance.removeEventCallback(id);
+          }
+        };
+      },
+      [EventType.LOGIN_SUCCESS, EventType.ACQUIRE_TOKEN_SUCCESS],
+    );
+  }, [msalInstance, patchAccessTokenMutate]);
 
   return (
     <RouterProvider
@@ -174,6 +229,7 @@ export function App() {
         apiTokenStatus,
         setApiTokenStatus,
         hasResponseInterceptor,
+        accessToken,
         createSessionMutateAsync,
       }}
     />
@@ -185,9 +241,11 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
+      <MsalProvider instance={msalInstance}>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </MsalProvider>
     </StrictMode>,
   );
 }
