@@ -1,29 +1,19 @@
-import { Typography } from "@equinor/eds-core-react";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { v1GetCwdFmuDirectorySessionOptions } from "../client/@tanstack/react-query.gen";
+import { PageHeader, PageText } from "../styles/common";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { data } = useQuery(v1GetCwdFmuDirectorySessionOptions());
-
   return (
     <>
-      <Typography variant="h2">FMU Settings</Typography>
+      <PageHeader>FMU Settings</PageHeader>
 
-      <Typography variant="ingress">
+      <PageText $variant="ingress">
         This is an application for managing the settings of FMU projects.
-      </Typography>
-
-      <Typography>
-        Current project: <strong>{data?.project_dir_name}</strong>
-        <br />
-        Current path: {data?.path}
-      </Typography>
+      </PageText>
     </>
   );
 }

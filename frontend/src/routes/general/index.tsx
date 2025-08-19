@@ -1,31 +1,43 @@
-import { Typography } from "@equinor/eds-core-react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { Suspense } from "react";
 
-import { v1GetCwdFmuDirectorySessionOptions } from "../../client/@tanstack/react-query.gen";
+import { projectGetProjectOptions } from "../../client/@tanstack/react-query.gen";
+import { Loading } from "../../components/common";
+import { PageHeader, PageText } from "../../styles/common";
 import { displayDateTime } from "../../utils/datetime";
 
 export const Route = createFileRoute("/general/")({
   component: RouteComponent,
 });
 
-function RouteComponent() {
-  const { data } = useQuery(v1GetCwdFmuDirectorySessionOptions());
+function Overview() {
+  const { data } = useSuspenseQuery(projectGetProjectOptions());
 
   return (
     <>
-      <Typography variant="h2">General</Typography>
+      <PageText>
+        Project: <strong>{data.project_dir_name}</strong>
+        <br />
+        Path: {data.path}
+        <br />
+        Created: {displayDateTime(data.config.created_at)} by{" "}
+        {data.config.created_by}
+        <br />
+        Version: {data.config.version}
+      </PageText>
+    </>
+  );
+}
 
-      <Typography>
-        Project: <strong>{data?.project_dir_name}</strong>
-        <br />
-        Path: {data?.path}
-        <br />
-        Created: {displayDateTime(data?.config.created_at ?? "")} by{" "}
-        {data?.config.created_by}
-        <br />
-        Version: {data?.config.version}
-      </Typography>
+function RouteComponent() {
+  return (
+    <>
+      <PageHeader>General</PageHeader>
+
+      <Suspense fallback={<Loading />}>
+        <Overview />
+      </Suspense>
     </>
   );
 }
