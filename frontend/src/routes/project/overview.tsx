@@ -7,7 +7,7 @@ import { useProject } from "../../services/project";
 import { PageCode, PageHeader, PageText } from "../../styles/common";
 import { displayDateTime } from "../../utils/datetime";
 
-export const Route = createFileRoute("/general/")({
+export const Route = createFileRoute("/project/overview")({
   component: RouteComponent,
 });
 
@@ -56,7 +56,7 @@ function Content() {
 function RouteComponent() {
   return (
     <>
-      <PageHeader>General</PageHeader>
+      <PageHeader>Project</PageHeader>
 
       <Suspense fallback={<Loading />}>
         <Content />
