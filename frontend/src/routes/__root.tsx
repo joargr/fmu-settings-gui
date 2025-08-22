@@ -8,20 +8,14 @@ import {
   createRootRouteWithContext,
   ErrorComponent,
   Outlet,
-  redirect,
   useLocation,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { isAxiosError } from "axios";
 import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { ToastContainer } from "react-toastify";
 
-import {
-  projectGetProjectOptions,
-  projectGetProjectQueryKey,
-  userGetUserOptions,
-} from "../client/@tanstack/react-query.gen";
+import { userGetUserOptions } from "../client/@tanstack/react-query.gen";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { RouterContext } from "../main";
@@ -35,9 +29,8 @@ import {
 import { AppContainer } from "./index.style";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  beforeLoad: async ({ context, matches }) => {
+  beforeLoad: async ({ context }) => {
     let apiTokenStatus = context.apiTokenStatus;
-    let projectDirNotFound = false;
 
     const apiToken = context.apiToken || getApiToken();
     if (isApiTokenNonEmpty(apiToken)) {
@@ -59,42 +52,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           meta: { errorPrefix: "Error getting initial user data" },
         })
         .catch(() => undefined);
-    }
-
-    const projectDirQueryState = context.queryClient.getQueryState(
-      projectGetProjectQueryKey(),
-    );
-    if (
-      projectDirQueryState !== undefined &&
-      projectDirQueryState.status === "error" &&
-      isAxiosError(projectDirQueryState.error) &&
-      projectDirQueryState.error.status === 404
-    ) {
-      projectDirNotFound = true;
-    }
-    if (projectDirQueryState === undefined || !projectDirNotFound) {
-      await context.queryClient
-        .fetchQuery(projectGetProjectOptions())
-        .catch((error: unknown) => {
-          if (isAxiosError(error)) {
-            if (error.status === 404) {
-              projectDirNotFound = true;
-            } else if (error.status === 401) {
-              apiTokenStatus = { present: true, valid: false };
-            } else {
-              console.error("      GET /fmu error =", error);
-            }
-          } else {
-            console.error("Unknown error getting FMU directory: ", error);
-          }
-        });
-    }
-    if (
-      projectDirNotFound &&
-      matches.length > 1 && // don't redirect when route not found (when matching only root route)
-      location.pathname !== "/directory"
-    ) {
-      redirect({ to: "/directory", throw: true });
     }
 
     return {

@@ -1,31 +1,54 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 
-import { projectGetProjectOptions } from "../../client/@tanstack/react-query.gen";
+import { FmuProject } from "../../client";
 import { Loading } from "../../components/common";
-import { PageHeader, PageText } from "../../styles/common";
+import { useProject } from "../../services/project";
+import { PageCode, PageHeader, PageText } from "../../styles/common";
 import { displayDateTime } from "../../utils/datetime";
 
 export const Route = createFileRoute("/general/")({
   component: RouteComponent,
 });
 
-function Overview() {
-  const { data } = useSuspenseQuery(projectGetProjectOptions());
+function ProjectInfo({ projectData }: { projectData: FmuProject }) {
+  return (
+    <PageText>
+      Project: <strong>{projectData.project_dir_name}</strong>
+      <br />
+      Path: {projectData.path}
+      <br />
+      Created: {displayDateTime(projectData.config.created_at)} by{" "}
+      {projectData.config.created_by}
+      <br />
+      Version: {projectData.config.version}
+    </PageText>
+  );
+}
+
+function ProjectNotFound({ text }: { text: string }) {
+  const hasText = text !== "";
+  const lead = "No project selected" + (hasText ? ":" : ".");
 
   return (
     <>
-      <PageText>
-        Project: <strong>{data.project_dir_name}</strong>
-        <br />
-        Path: {data.path}
-        <br />
-        Created: {displayDateTime(data.config.created_at)} by{" "}
-        {data.config.created_by}
-        <br />
-        Version: {data.config.version}
-      </PageText>
+      <PageText>{lead}</PageText>
+
+      {hasText && <PageCode>{text}</PageCode>}
+    </>
+  );
+}
+
+function Content() {
+  const { data: project } = useProject();
+
+  return (
+    <>
+      {project.status && project.data ? (
+        <ProjectInfo projectData={project.data} />
+      ) : (
+        <ProjectNotFound text={project.text ?? ""} />
+      )}
     </>
   );
 }
@@ -36,7 +59,7 @@ function RouteComponent() {
       <PageHeader>General</PageHeader>
 
       <Suspense fallback={<Loading />}>
-        <Overview />
+        <Content />
       </Suspense>
     </>
   );
