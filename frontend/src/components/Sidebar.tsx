@@ -8,7 +8,21 @@ import {
 } from "@equinor/eds-icons";
 import { Link } from "@tanstack/react-router";
 
+import { useProject } from "../services/project";
+
+type AccordianSubItem = {
+  label: string;
+  to: string;
+};
+
 export function Sidebar() {
+  const { data: project } = useProject();
+
+  const ProjectSubItems: AccordianSubItem[] = [];
+  if (project.status) {
+    ProjectSubItems.push({ label: "SMDA", to: "/general/smda" });
+  }
+
   return (
     <EdsSideBar open>
       <EdsSideBar.Content>
@@ -28,7 +42,14 @@ export function Sidebar() {
         />
         <EdsSideBar.Accordion label="General" icon={settings}>
           <EdsSideBar.AccordionItem label="Overview" as={Link} to="/general" />
-          <EdsSideBar.AccordionItem label="SMDA" as={Link} to="/general/smda" />
+          {ProjectSubItems.map((item) => (
+            <EdsSideBar.AccordionItem
+              key={item.to}
+              label={item.label}
+              as={Link}
+              to={item.to}
+            />
+          ))}
         </EdsSideBar.Accordion>
         <EdsSideBar.Accordion label="Mappings" icon={shuffle}>
           <EdsSideBar.AccordionItem label="Overview" as={Link} to="/mappings" />
