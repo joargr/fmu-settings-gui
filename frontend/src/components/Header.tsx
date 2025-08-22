@@ -11,7 +11,7 @@ function ProjectInfo() {
     <ProjectInfoContainer>
       Project:{" "}
       {project.status && project.data ? (
-        <strong>{project.data.project_dir_name}</strong>
+        <span>{project.data.project_dir_name}</span>
       ) : (
         "(not set)"
       )}

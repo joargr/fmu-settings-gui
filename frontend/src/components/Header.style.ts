@@ -13,4 +13,8 @@ export const ProjectInfoContainer = styled.div`
   border: solid 1px ${tokens.colors.text.static_icons__secondary.hex};
   background: ${tokens.colors.ui.background__medium.hex};
   color: ${tokens.colors.text.static_icons__secondary.hex};
+
+  span {
+    font-weight: bold;
+  }
 `;

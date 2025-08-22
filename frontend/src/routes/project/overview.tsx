@@ -6,6 +6,7 @@ import { Loading } from "../../components/common";
 import { useProject } from "../../services/project";
 import { PageCode, PageHeader, PageText } from "../../styles/common";
 import { displayDateTime } from "../../utils/datetime";
+import { ProjectName } from "./overview.style";
 
 export const Route = createFileRoute("/project/overview")({
   component: RouteComponent,
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/project/overview")({
 function ProjectInfo({ projectData }: { projectData: FmuProject }) {
   return (
     <PageText>
-      Project: <strong>{projectData.project_dir_name}</strong>
+      Project: <ProjectName>{projectData.project_dir_name}</ProjectName>
       <br />
       Path: {projectData.path}
       <br />
