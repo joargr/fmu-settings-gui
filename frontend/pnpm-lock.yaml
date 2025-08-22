@@ -20,6 +20,9 @@ importers:
       '@equinor/eds-icons':
         specifier: ^0.22.0
         version: 0.22.0
+      '@equinor/eds-tokens':
+        specifier: ^0.9.2
+        version: 0.9.2
       '@hey-api/client-axios':
         specifier: ^0.7.1
         version: 0.7.1(@hey-api/openapi-ts@0.66.7(typescript@5.7.3))(axios@1.9.0)
