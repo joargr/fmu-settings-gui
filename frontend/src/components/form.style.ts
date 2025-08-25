@@ -1,3 +1,4 @@
+import { Search } from "@equinor/eds-core-react";
 import styled from "styled-components";
 
 export const EditableTextFieldFormContainer = styled.div`
@@ -6,6 +7,15 @@ export const EditableTextFieldFormContainer = styled.div`
   }
 
   button + button {
-    margin-left: 1em;
+    margin-left: 8px;
   }
+`;
+
+export const SearchFieldFormContainer = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+export const SearchFieldInput = styled(Search)`
+  width: 100%;
 `;

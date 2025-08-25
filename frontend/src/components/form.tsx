@@ -3,6 +3,7 @@ import {
   DotProgress,
   TextField as EdsTextField,
   Icon,
+  InputWrapper,
   Tooltip,
 } from "@equinor/eds-core-react";
 import { error_filled } from "@equinor/eds-icons";
@@ -15,10 +16,15 @@ import {
   useState,
 } from "react";
 import { toast } from "react-toastify";
-import z, { ZodString } from "zod/v4";
+import z from "zod/v4";
 
 import { fieldContext, formContext, useFieldContext } from "../utils/form";
-import { EditableTextFieldFormContainer } from "./form.style";
+import { handleValidator, ValidatorProps } from "../utils/validator";
+import {
+  EditableTextFieldFormContainer,
+  SearchFieldFormContainer,
+  SearchFieldInput,
+} from "./form.style";
 
 Icon.add({ error_filled });
 
@@ -35,13 +41,16 @@ export interface MutationCallbackProps<T> {
   formReset: () => void;
 }
 
-export interface CommonTextFieldFormProps {
+interface BasicTextFieldProps {
   name: string;
   label: string;
   value: string;
   placeholder?: string;
-  length?: number;
-  minLength?: number;
+  helperText?: string;
+}
+
+interface SetStateFormProps {
+  setStateCallback: (value: string) => void;
 }
 
 interface MutationFormProps {
@@ -49,23 +58,33 @@ interface MutationFormProps {
   mutationIsPending: boolean;
 }
 
+export interface CommonTextFieldProps
+  extends BasicTextFieldProps,
+    ValidatorProps {}
+
 export function TextField({
   label,
   placeholder,
+  helperText,
   isReadOnly,
+  toUpperCase,
   setSubmitDisabled,
 }: {
   label: string;
   placeholder?: string;
+  helperText?: string;
   isReadOnly?: boolean;
-  setSubmitDisabled: Dispatch<SetStateAction<boolean>>;
+  toUpperCase?: boolean;
+  setSubmitDisabled?: Dispatch<SetStateAction<boolean>>;
 }) {
   const field = useFieldContext<string>();
 
   useEffect(() => {
-    setSubmitDisabled(
-      field.state.meta.isDefaultValue || !field.state.meta.isValid,
-    );
+    if (setSubmitDisabled) {
+      setSubmitDisabled(
+        field.state.meta.isDefaultValue || !field.state.meta.isValid,
+      );
+    }
   }, [
     setSubmitDisabled,
     field.state.meta.isDefaultValue,
@@ -73,32 +92,70 @@ export function TextField({
   ]);
 
   return (
-    <EdsTextField
-      id={field.name}
-      name={field.name}
-      label={label}
-      readOnly={isReadOnly}
-      value={field.state.value}
-      placeholder={placeholder}
-      onBlur={field.handleBlur}
-      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-        field.handleChange(e.target.value);
-      }}
-      {...(!field.state.meta.isValid && {
-        variant: "error",
-        helperIcon: <Icon name="error_filled" title="Error" />,
-        helperText: field.state.meta.errors
-          .map((err: z.ZodError) => err.message)
-          .join(", "),
-      })}
-    />
+    <InputWrapper helperProps={{ text: helperText }}>
+      <EdsTextField
+        id={field.name}
+        name={field.name}
+        label={label}
+        readOnly={isReadOnly}
+        value={field.state.value}
+        placeholder={placeholder}
+        onBlur={field.handleBlur}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          let value = e.target.value;
+          if (toUpperCase) {
+            value = value.toUpperCase();
+          }
+          field.handleChange(value);
+        }}
+        {...(!field.state.meta.isValid && {
+          variant: "error",
+          helperIcon: <Icon name="error_filled" title="Error" />,
+          helperText: field.state.meta.errors
+            .map((err: z.ZodError) => err.message)
+            .join(", "),
+        })}
+      />
+    </InputWrapper>
+  );
+}
+
+export function SearchField({
+  placeholder,
+  helperText,
+  toUpperCase,
+}: {
+  placeholder?: string;
+  helperText?: string;
+  toUpperCase?: boolean;
+}) {
+  const field = useFieldContext<string>();
+
+  return (
+    <InputWrapper helperProps={{ text: helperText }}>
+      <SearchFieldInput
+        id={field.name}
+        value={field.state.value}
+        placeholder={placeholder}
+        onBlur={field.handleBlur}
+        onChange={(e) => {
+          let value = e.target.value;
+          if (toUpperCase) {
+            value = value.toUpperCase();
+          }
+          field.handleChange(value);
+        }}
+      />
+    </InputWrapper>
   );
 }
 
 export function SubmitButton({
+  label,
   disabled,
   isPending,
 }: {
+  label: string;
   disabled?: boolean;
   isPending?: boolean;
 }) {
@@ -119,26 +176,27 @@ export function SubmitButton({
           }
         }}
       >
-        {isPending ? <DotProgress /> : "Save"}
+        {isPending ? <DotProgress /> : label}
       </Button>
     </Tooltip>
   );
 }
 
-const { useAppForm: useAppFormEditableTextField } = createFormHook({
+const { useAppForm: useAppFormEditableTextFieldForm } = createFormHook({
   fieldContext,
   formContext,
   fieldComponents: { TextField },
   formComponents: { SubmitButton },
 });
 
-type EditableTextFieldFormProps = CommonTextFieldFormProps & MutationFormProps;
+type EditableTextFieldFormProps = CommonTextFieldProps & MutationFormProps;
 
 export function EditableTextFieldForm({
   name,
   label,
   value,
   placeholder,
+  helperText,
   length,
   minLength,
   mutationCallback,
@@ -147,20 +205,7 @@ export function EditableTextFieldForm({
   const [isReadonly, setIsReadonly] = useState(true);
   const [submitDisabled, setSubmitDisabled] = useState(true);
 
-  let validator: ZodString | undefined;
-  if (length !== undefined) {
-    validator = z
-      .string()
-      .refine((val: string) => val === "" || val.length === length, {
-        error: `Value must be empty or exactly ${String(length)} characters long`,
-      });
-  } else if (minLength !== undefined) {
-    validator = z
-      .string()
-      .refine((val) => val === "" || val.length >= minLength, {
-        error: `Value must be empty or at least ${String(minLength)} characters long`,
-      });
-  }
+  const validator = handleValidator({ length, minLength });
 
   const formSubmitCallback = ({
     message,
@@ -171,7 +216,7 @@ export function EditableTextFieldForm({
     setIsReadonly(true);
   };
 
-  const form = useAppFormEditableTextField({
+  const form = useAppFormEditableTextFieldForm({
     defaultValues: {
       [name]: value,
     },
@@ -205,6 +250,7 @@ export function EditableTextFieldForm({
             <field.TextField
               label={label}
               placeholder={placeholder}
+              helperText={helperText}
               isReadOnly={isReadonly}
               setSubmitDisabled={setSubmitDisabled}
             />
@@ -223,6 +269,7 @@ export function EditableTextFieldForm({
           ) : (
             <>
               <form.SubmitButton
+                label="Save"
                 disabled={submitDisabled}
                 isPending={mutationIsPending}
               />
@@ -243,5 +290,52 @@ export function EditableTextFieldForm({
         </form.AppForm>
       </form>
     </EditableTextFieldFormContainer>
+  );
+}
+
+const { useAppForm: useAppFormSearchFieldForm } = createFormHook({
+  fieldContext,
+  formContext,
+  fieldComponents: { SearchField },
+  formComponents: { SubmitButton },
+});
+
+type SearchFieldFormProps = Omit<BasicTextFieldProps, "label"> &
+  SetStateFormProps;
+
+export function SearchFieldForm({
+  name,
+  value,
+  helperText,
+  setStateCallback,
+}: SearchFieldFormProps) {
+  const form = useAppFormSearchFieldForm({
+    defaultValues: {
+      [name]: value,
+    },
+    onSubmit: ({ formApi, value }) => {
+      setStateCallback(value[name]);
+      formApi.reset();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void form.handleSubmit();
+      }}
+    >
+      <SearchFieldFormContainer>
+        <form.AppField name={name}>
+          {(field) => <field.SearchField helperText={helperText} toUpperCase />}
+        </form.AppField>
+
+        <form.AppForm>
+          <form.SubmitButton label="Search" />
+        </form.AppForm>
+      </SearchFieldFormContainer>
+    </form>
   );
 }

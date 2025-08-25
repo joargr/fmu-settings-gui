@@ -6,9 +6,9 @@ import { Loading } from "../../components/common";
 import { useProject } from "../../services/project";
 import { PageCode, PageHeader, PageText } from "../../styles/common";
 import { displayDateTime } from "../../utils/datetime";
-import { ProjectName } from "./overview.style";
+import { ProjectName } from "./index.style";
 
-export const Route = createFileRoute("/project/overview")({
+export const Route = createFileRoute("/project/")({
   component: RouteComponent,
 });
 
