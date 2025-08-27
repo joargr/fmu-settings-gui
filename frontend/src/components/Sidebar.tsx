@@ -2,7 +2,7 @@ import { SideBar as EdsSideBar } from "@equinor/eds-core-react";
 import { account_circle, dashboard, folder } from "@equinor/eds-icons";
 import { Link } from "@tanstack/react-router";
 
-import { useProject } from "../services/project";
+import { useProject } from "#services/project";
 
 type AccordianSubItem = {
   label: string;
@@ -29,11 +29,7 @@ export function Sidebar() {
           />
         </EdsSideBar.Accordion>
         <EdsSideBar.Accordion label="Project" icon={folder}>
-          <EdsSideBar.AccordionItem
-            label="Overview"
-            as={Link}
-            to="/project/overview"
-          />
+          <EdsSideBar.AccordionItem label="Overview" as={Link} to="/project" />
           {ProjectSubItems.map((item) => (
             <EdsSideBar.AccordionItem
               key={item.to}
