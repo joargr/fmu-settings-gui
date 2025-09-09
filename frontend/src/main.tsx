@@ -36,12 +36,12 @@ import {
   createSessionAsync,
   handleAddSsoAccessToken,
   isApiTokenNonEmpty,
-  queryAndMutationRetry,
   responseInterceptorFulfilled,
   responseInterceptorRejected,
   TokenStatus,
 } from "#utils/authentication";
 import { defaultErrorHandling } from "#utils/query";
+import { mutationRetry } from "#utils/query";
 import { routeTree } from "./routeTree.gen";
 
 export interface RouterContext {
@@ -119,6 +119,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 300000,
     },
+    mutations: {
+      retry: (failureCount: number, error: Error) =>
+        mutationRetry(failureCount, error),
+    },
   },
 });
 
@@ -162,8 +166,6 @@ export function App() {
         queryKey: smdaGetHealthQueryKey(),
       });
     },
-    retry: (failureCount: number, error: Error) =>
-      queryAndMutationRetry(failureCount, error),
     meta: { errorPrefix: "Error adding access token to session" },
   });
 
