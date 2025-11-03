@@ -51,12 +51,12 @@ export const InfoBox = styled.div`
   td {
     vertical-align: top;
   }
+`;
 
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: ${tokens.spacings.comfortable.small};
-  }
+export const ChipsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${tokens.spacings.comfortable.small}
 `;
 
 export const InfoChip = styled(Chip)`

@@ -2,6 +2,7 @@ import {
   TextField as EdsTextField,
   Icon,
   InputWrapper,
+  NativeSelect,
 } from "@equinor/eds-core-react";
 import { error_filled } from "@equinor/eds-icons";
 import { ChangeEvent, Dispatch, SetStateAction, useEffect } from "react";
@@ -9,7 +10,7 @@ import z from "zod/v4";
 
 import { useFieldContext } from "#utils/form";
 import { ValidatorProps } from "#utils/validator";
-import { SearchFieldInput } from "./field.style";
+import { CommonInputWrapper, SearchFieldInput } from "./field.style";
 
 Icon.add({ error_filled });
 
@@ -24,6 +25,13 @@ export interface BasicTextFieldProps {
 export interface CommonTextFieldProps
   extends BasicTextFieldProps,
     ValidatorProps {}
+
+export interface OptionProps {
+  value: string;
+  label: string;
+}
+
+const helperTextLoadingOptions = "Loading options...";
 
 export function TextField({
   label,
@@ -110,5 +118,54 @@ export function SearchField({
         }}
       />
     </InputWrapper>
+  );
+}
+
+export function Select({
+  label,
+  helperText,
+  value,
+  options,
+  loadingOptions,
+  onChange,
+}: {
+  label: string;
+  helperText?: string;
+  value: string;
+  options: OptionProps[];
+  loadingOptions?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const field = useFieldContext();
+
+  return (
+    <CommonInputWrapper
+      helperProps={
+        field.state.meta.isValid || loadingOptions
+          ? { text: loadingOptions ? helperTextLoadingOptions : helperText }
+          : {
+              className: "errorText",
+              icon: <Icon name="error_filled" title="Error" />,
+              text: field.state.meta.errors
+                .map((err: string) => err)
+                .join(", "),
+            }
+      }
+    >
+      <NativeSelect
+        id={field.name}
+        label={label}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </NativeSelect>
+    </CommonInputWrapper>
   );
 }

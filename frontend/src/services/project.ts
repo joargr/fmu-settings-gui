@@ -17,6 +17,7 @@ import {
 } from "#client/@tanstack/react-query.gen";
 import { LockStatus } from "#client/types.gen";
 import { projectLockStatusRefetchInterval } from "#config";
+import { HTTP_STATUS_UNAUTHORIZED } from "#utils/api";
 
 type GetProject = {
   status: boolean;
@@ -42,7 +43,7 @@ export function useProject(options?: Options<ProjectGetProjectData>) {
           let text = "";
           if (isAxiosError(error)) {
             // Use normal handling for unauthorized response
-            if (error.status === 401) {
+            if (error.status === HTTP_STATUS_UNAUTHORIZED) {
               return Promise.reject(error);
             }
             if (error.response?.data && "detail" in error.response.data) {

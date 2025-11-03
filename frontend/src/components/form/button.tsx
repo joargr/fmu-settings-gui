@@ -13,7 +13,7 @@ export function GeneralButton({
 }) {
   return (
     <Tooltip title={tooltipText ?? ""}>
-      <Button onClick={onClick} disabled={disabled}>
+      <Button onClick={onClick} aria-disabled={disabled}>
         {label}
       </Button>
     </Tooltip>
@@ -24,19 +24,15 @@ export function SubmitButton({
   label,
   disabled,
   isPending,
+  helperTextDisabled = "Form can be submitted when errors have been resolved",
 }: {
   label: string;
   disabled?: boolean;
   isPending?: boolean;
+  helperTextDisabled?: string;
 }) {
   return (
-    <Tooltip
-      title={
-        disabled
-          ? "Value can be submitted when it has been changed and is valid"
-          : ""
-      }
-    >
+    <Tooltip title={disabled ? helperTextDisabled : undefined}>
       <Button
         type="submit"
         aria-disabled={disabled}
@@ -58,7 +54,7 @@ export function CancelButton({
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
-    <Button type="reset" color="secondary" variant="outlined" onClick={onClick}>
+    <Button type="reset" variant="outlined" onClick={onClick}>
       Cancel
     </Button>
   );
