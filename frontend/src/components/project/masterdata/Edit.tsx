@@ -9,11 +9,12 @@ import {
 import { arrow_back, arrow_forward } from "@equinor/eds-icons";
 import {
   AnyFieldMetaBase,
+  AnyFormApi,
   createFormHook,
   Updater,
 } from "@tanstack/react-form";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 import {
@@ -68,31 +69,78 @@ import { FieldSearch } from "./FieldSearch";
 
 Icon.add({ arrow_back, arrow_forward });
 
-type SmdaMasterdataResultGrouped = Record<string, SmdaMasterdataResult>;
+const DUMMYGROUP_NAME = "none";
 
-type SmdaReferenceData = {
-  coordinateSystems: Array<CoordinateSystem>;
-  coordinateSystemsOptions: Array<CoordinateSystem>;
-  stratigraphicColumns: Array<StratigraphicColumn>;
-  stratigraphicColumnsOptions: Array<StratigraphicColumn>;
-};
+type SmdaMasterdataResultGrouped = Record<string, SmdaMasterdataResult>;
 
 type SmdaMasterdataCoordinateSystemFields = {
   coordinateSystem: CoordinateSystem;
   fields: Array<FieldItem>;
 };
 
-type ItemType = "country" | "discovery" | "field";
-type DiscoveryListGrouped = Record<string, Array<DiscoveryItem>>;
+type ItemListGrouped<T> = Record<string, Array<T>>;
+
+type OptionsData = {
+  coordinateSystems: Array<CoordinateSystem>;
+  coordinateSystemsOptions: Array<CoordinateSystem>;
+  stratigraphicColumns: Array<StratigraphicColumn>;
+  stratigraphicColumnsOptions: Array<StratigraphicColumn>;
+};
+
 type ItemLists = {
   field: Array<FieldItem>;
   country: Array<CountryItem>;
-  discovery: DiscoveryListGrouped;
+  discovery: ItemListGrouped<DiscoveryItem>;
 };
-type OrphanItemLists = {
-  country?: Array<CountryItem>;
-  discovery: Array<DiscoveryItem>;
+
+type FormMasterdataBase = {
+  field: Array<FieldItem>;
+  country: Array<CountryItem>;
+  discovery: ItemListGrouped<DiscoveryItem>;
 };
+
+type FormMasterdataSub = Omit<FormMasterdataBase, "field">;
+
+type FormMasterdataProject = FormMasterdataBase & OptionsData;
+
+function emptyOptionsData(): OptionsData {
+  return {
+    coordinateSystems: [],
+    coordinateSystemsOptions: [],
+    stratigraphicColumns: [],
+    stratigraphicColumnsOptions: [],
+  };
+}
+
+function emptyItemLists(): ItemLists {
+  return {
+    field: [],
+    country: [],
+    discovery: {},
+  };
+}
+
+function emptyFormMasterdataBase(): FormMasterdataBase {
+  return {
+    field: [],
+    country: [],
+    discovery: {},
+  };
+}
+
+function emptyFormMasterdataSub(): FormMasterdataSub {
+  return {
+    country: [],
+    discovery: {},
+  };
+}
+
+function emptyFormMasterdataProject(): FormMasterdataProject {
+  return {
+    ...emptyFormMasterdataBase(),
+    ...emptyOptionsData(),
+  };
+}
 
 const { useAppForm } = createFormHook({
   fieldContext,
@@ -101,24 +149,69 @@ const { useAppForm } = createFormHook({
   formComponents: { CancelButton, SubmitButton },
 });
 
-function createReferenceData(
-  smdaMasterdataGrouped: SmdaMasterdataResultGrouped,
-): SmdaReferenceData {
-  const fieldCount = Object.keys(smdaMasterdataGrouped).length;
+function handlePrepareEditData(
+  masterdata: SmdaMasterdataResultGrouped,
+  formApi: AnyFormApi,
+  setProjectData: Dispatch<SetStateAction<FormMasterdataProject>>,
+  setAvailableData: Dispatch<SetStateAction<FormMasterdataBase>>,
+  setOrphanData: Dispatch<SetStateAction<FormMasterdataSub>>,
+) {
+  const optionsData = createOptions(
+    masterdata,
+    formApi.getFieldValue("field") as Array<FieldItem>,
+  );
 
-  const defaultCoordinateSystems = Object.values(smdaMasterdataGrouped).reduce<
+  handleErrorUnknownInitialValue(
+    formApi.setFieldMeta,
+    "coordinate_system",
+    optionsData.coordinateSystems,
+    formApi.getFieldValue("coordinate_system") as CoordinateSystem,
+  );
+
+  handleErrorUnknownInitialValue(
+    formApi.setFieldMeta,
+    "stratigraphic_column",
+    optionsData.stratigraphicColumnsOptions,
+    formApi.getFieldValue("stratigraphic_column") as StratigraphicColumn,
+  );
+
+  const [projectItems, availableItems, orphanItems] = createItemLists(
+    masterdata,
+    formApi.getFieldValue("field") as Array<FieldItem>,
+    formApi.getFieldValue("country") as Array<CountryItem>,
+    formApi.getFieldValue("discovery") as Array<DiscoveryItem>,
+  );
+
+  setProjectData({ ...projectItems, ...optionsData });
+  setAvailableData({ ...availableItems });
+  setOrphanData({
+    country: orphanItems.country,
+    discovery: orphanItems.discovery,
+  });
+}
+
+function createOptions(
+  smdaMasterdataGrouped: SmdaMasterdataResultGrouped,
+  projectFields: Array<FieldItem>,
+): OptionsData {
+  const fieldCount = projectFields.length;
+
+  const defaultCoordinateSystems = Object.entries(smdaMasterdataGrouped).reduce<
     Record<string, SmdaMasterdataCoordinateSystemFields>
-  >((acc, masterdata) => {
-    const csid = masterdata.field_coordinate_system.uuid;
-    if (!(csid in acc)) {
-      acc[csid] = {
-        coordinateSystem: masterdata.field_coordinate_system,
-        fields: [],
-      };
+  >((acc, fieldData) => {
+    const [field, masterdata] = fieldData;
+    if (projectFields.find((f) => f.identifier === field)) {
+      const csId = masterdata.field_coordinate_system.uuid;
+      if (!(csId in acc)) {
+        acc[csId] = {
+          coordinateSystem: masterdata.field_coordinate_system,
+          fields: [],
+        };
+      }
+      acc[csId].fields = acc[csId].fields
+        .concat(masterdata.field)
+        .sort((a, b) => stringCompare(a.identifier, b.identifier));
     }
-    acc[csid].fields = acc[csid].fields
-      .concat(masterdata.field)
-      .sort((a, b) => stringCompare(a.identifier, b.identifier));
 
     return acc;
   }, {});
@@ -145,35 +238,40 @@ function createReferenceData(
     // The list of coordinate systems is the same for all SMDA fields
     coordinateSystems:
       fieldCount > 0
-        ? Object.values(smdaMasterdataGrouped)[0].coordinate_systems
+        ? smdaMasterdataGrouped[projectFields[0].identifier].coordinate_systems
         : [],
     coordinateSystemsOptions:
       fieldCount > 0
         ? dcsOptions.concat(
-            Object.values(smdaMasterdataGrouped)[0]
-              .coordinate_systems.filter(
-                (cs) => !dcsOptions.some((dcs) => dcs.uuid === cs.uuid),
-              )
+            smdaMasterdataGrouped[
+              projectFields[0].identifier
+            ].coordinate_systems
+              .filter((cs) => !dcsOptions.some((dcs) => dcs.uuid === cs.uuid))
               .sort((a, b) => stringCompare(a.identifier, b.identifier)),
           )
         : [],
-    stratigraphicColumns: Object.values(smdaMasterdataGrouped)
-      .reduce<Array<StratigraphicColumn>>((acc, masterdata) => {
+    stratigraphicColumns: Object.entries(smdaMasterdataGrouped).reduce<
+      Array<StratigraphicColumn>
+    >((acc, fieldData) => {
+      const [field, masterdata] = fieldData;
+      if (projectFields.find((f) => f.identifier === field)) {
         acc.push(...masterdata.stratigraphic_columns);
+      }
 
-        return acc;
-      }, [])
-      .sort((a, b) => stringCompare(a.identifier, b.identifier)),
+      return acc;
+    }, []),
     stratigraphicColumnsOptions: Object.entries(smdaMasterdataGrouped)
       .reduce<Array<StratigraphicColumn>>((acc, fieldData) => {
         const [field, masterdata] = fieldData;
-        acc.push(
-          ...masterdata.stratigraphic_columns.map((value) => ({
-            ...value,
-            identifier:
-              value.identifier + (fieldCount > 1 ? ` [${field}]` : ""),
-          })),
-        );
+        if (projectFields.find((f) => f.identifier === field)) {
+          acc.push(
+            ...masterdata.stratigraphic_columns.map((value) => ({
+              ...value,
+              identifier:
+                value.identifier + (fieldCount > 1 ? ` [${field}]` : ""),
+            })),
+          );
+        }
 
         return acc;
       }, [])
@@ -186,24 +284,22 @@ function createItemLists(
   projectFields: Array<FieldItem>,
   projectCountries: Array<CountryItem>,
   projectDiscoveries: Array<DiscoveryItem>,
-): [ItemLists, ItemLists, OrphanItemLists] {
-  const project = projectFields.reduce<ItemLists>(
-    (acc, curr) => {
-      acc.discovery[curr.identifier] = [];
+): [ItemLists, ItemLists, ItemLists] {
+  const project = projectFields.reduce<ItemLists>((acc, curr) => {
+    acc.discovery[curr.identifier] = [];
 
-      return acc;
-    },
-    { field: [], country: [], discovery: {} },
-  );
+    return acc;
+  }, emptyItemLists());
   const available = Object.keys(smdaMasterdataGrouped).reduce<ItemLists>(
     (acc, curr) => {
       acc.discovery[curr] = [];
 
       return acc;
     },
-    { field: [], country: [], discovery: {} },
+    emptyItemLists(),
   );
-  const orphan: OrphanItemLists = { discovery: [] };
+  const orphan = emptyItemLists();
+  orphan.discovery[DUMMYGROUP_NAME] = [];
   const selected = {
     country: [] as Array<string>,
     discovery: [] as Array<string>,
@@ -245,8 +341,8 @@ function createItemLists(
     }
   });
 
-  // Detection of country orphans are currently not implemented
-  orphan.discovery.push(
+  // Detection of country orphans is currently not implemented
+  orphan.discovery[DUMMYGROUP_NAME].push(
     ...projectDiscoveries.filter(
       (discovery) => !selected.discovery.includes(discovery.uuid),
     ),
@@ -255,7 +351,7 @@ function createItemLists(
   return [project, available, orphan];
 }
 
-function setErrorUnknownInitialValue(
+function handleErrorUnknownInitialValue(
   setFieldMeta: (field: keyof Smda, updater: Updater<AnyFieldMetaBase>) => void,
   field: keyof Smda,
   array: IdentifierUuidType[],
@@ -276,36 +372,28 @@ function setErrorUnknownInitialValue(
 
 function Items({
   fields,
-  selectedFields,
-  itemLists,
-  itemType,
+  projectFields,
+  itemListGrouped,
   operation,
 }: {
   fields: Array<string>;
-  selectedFields?: Array<string>;
-  itemLists: ItemLists;
-  itemType: ItemType;
+  projectFields?: Array<string>;
+  itemListGrouped: ItemListGrouped<CountryItem | DiscoveryItem | FieldItem>;
   operation: ListOperation;
 }) {
   const fieldContext = useFieldContext();
-  const groups =
-    itemType === "discovery" && fields.length > 0 ? fields.sort() : ["none"];
 
-  if (Object.keys(itemLists).length === 0) {
-    return;
-  }
+  const isDummyGroup =
+    Object.keys(itemListGrouped).length === 1 &&
+    DUMMYGROUP_NAME in itemListGrouped;
+  const groups =
+    !isDummyGroup && fields.length > 0 ? fields.sort() : [DUMMYGROUP_NAME];
 
   return (
     <>
       {groups.map((group) => {
-        const isSelectedField =
-          group === "none" ? true : (selectedFields?.includes(group) ?? true);
-        const items: Record<
-          string,
-          Array<CountryItem | DiscoveryItem | FieldItem>
-        > = itemType === "discovery"
-          ? itemLists[itemType]
-          : { none: itemLists[itemType] };
+        const isRelatedToProjectField =
+          group === DUMMYGROUP_NAME || (projectFields?.includes(group) ?? true);
 
         return (
           <div key={group}>
@@ -313,8 +401,8 @@ function Items({
               <PageHeader $variant="h6">{group}</PageHeader>
             )}
             <ChipsContainer>
-              {group in items && items[group].length > 0 ? (
-                items[group]
+              {group in itemListGrouped && itemListGrouped[group].length > 0 ? (
+                itemListGrouped[group]
                   .sort((a, b) =>
                     stringCompare(
                       "short_identifier" in a
@@ -327,7 +415,7 @@ function Items({
                   )
                   .map<React.ReactNode>((item) => {
                     const contents = [];
-                    if (isSelectedField && operation === "addition") {
+                    if (isRelatedToProjectField && operation === "addition") {
                       contents.push(<Icon name="arrow_back" />);
                     }
                     contents.push(
@@ -343,7 +431,7 @@ function Items({
                       <InfoChip
                         key={item.uuid}
                         onClick={
-                          isSelectedField
+                          isRelatedToProjectField
                             ? () => {
                                 handleNameUuidListOperation(
                                   fieldContext,
@@ -379,16 +467,15 @@ export function Edit({
   closeDialog: () => void;
 }) {
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
-  const [smdaFields, setSmdaFields] = useState<Array<string> | undefined>();
-  const [smdaReferenceData, setSmdaReferenceData] = useState<
-    SmdaReferenceData | undefined
-  >();
-  const [projectItems, setProjectItems] = useState<ItemLists>({} as ItemLists);
-  const [availableItems, setAvailableItems] = useState<ItemLists>(
-    {} as ItemLists,
+  const [smdaFields, setSmdaFields] = useState<Array<string>>([]);
+  const [projectData, setProjectData] = useState<FormMasterdataProject>(
+    emptyFormMasterdataProject(),
   );
-  const [orphanItems, setOrphanItems] = useState<OrphanItemLists>(
-    {} as OrphanItemLists,
+  const [availableData, setAvailableData] = useState<FormMasterdataBase>(
+    emptyFormMasterdataBase(),
+  );
+  const [orphanData, setOrphanData] = useState<FormMasterdataSub>(
+    emptyFormMasterdataSub(),
   );
 
   const queryClient = useQueryClient();
@@ -414,7 +501,7 @@ export function Edit({
   });
 
   const smdaMasterdata = useQueries({
-    queries: (smdaFields ?? []).map((field) =>
+    queries: smdaFields.map((field) =>
       smdaPostMasterdataOptions({ body: [{ identifier: field }] }),
     ),
     combine: (results) => ({
@@ -437,15 +524,13 @@ export function Edit({
     defaultValues: projectMasterdata,
     listeners: {
       onChange: ({ formApi }) => {
-        const [projectItems, availableItems, orphaItems] = createItemLists(
+        handlePrepareEditData(
           smdaMasterdata.data,
-          formApi.getFieldValue("field"),
-          formApi.getFieldValue("country"),
-          formApi.getFieldValue("discovery"),
+          formApi,
+          setProjectData,
+          setAvailableData,
+          setOrphanData,
         );
-        setProjectItems(projectItems);
-        setAvailableItems(availableItems);
-        setOrphanItems(orphaItems);
       },
     },
     onSubmit: ({ formApi, value }) => {
@@ -468,42 +553,16 @@ export function Edit({
   }, [isOpen, projectMasterdata]);
 
   useEffect(() => {
-    if (smdaFields !== undefined && smdaMasterdata.isSuccess) {
-      const refData = createReferenceData(smdaMasterdata.data);
-      setSmdaReferenceData(refData);
-      setErrorUnknownInitialValue(
-        form.setFieldMeta,
-        "coordinate_system",
-        refData.coordinateSystems,
-        projectMasterdata.coordinate_system,
-      );
-      setErrorUnknownInitialValue(
-        form.setFieldMeta,
-        "stratigraphic_column",
-        refData.stratigraphicColumnsOptions,
-        projectMasterdata.stratigraphic_column,
-      );
-      const [projectItems, availableItems, orphanItems] = createItemLists(
+    if (smdaMasterdata.isSuccess && Object.keys(smdaMasterdata.data).length) {
+      handlePrepareEditData(
         smdaMasterdata.data,
-        projectMasterdata.field,
-        projectMasterdata.country,
-        projectMasterdata.discovery,
+        form,
+        setProjectData,
+        setAvailableData,
+        setOrphanData,
       );
-      setProjectItems(projectItems);
-      setAvailableItems(availableItems);
-      setOrphanItems(orphanItems);
     }
-  }, [
-    form,
-    projectMasterdata.coordinate_system,
-    projectMasterdata.country,
-    projectMasterdata.discovery,
-    projectMasterdata.field,
-    projectMasterdata.stratigraphic_column,
-    smdaFields,
-    smdaMasterdata.data,
-    smdaMasterdata.isSuccess,
-  ]);
+  }, [form, form.setFieldMeta, smdaMasterdata.data, smdaMasterdata.isSuccess]);
 
   function handleClose({ formReset }: { formReset: () => void }) {
     formReset();
@@ -527,7 +586,7 @@ export function Edit({
           }
 
           return acc;
-        }, smdaFields ?? [])
+        }, smdaFields)
         .sort((a, b) => stringCompare(a, b)),
     );
   }
@@ -593,8 +652,9 @@ export function Edit({
                               fields={field.state.value.map(
                                 (f) => f.identifier,
                               )}
-                              itemLists={projectItems}
-                              itemType="field"
+                              itemListGrouped={{
+                                [DUMMYGROUP_NAME]: projectData.field,
+                              }}
                               operation="removal"
                             />
                           </ItemsContainer>
@@ -603,12 +663,13 @@ export function Edit({
                           <Label label="Field" />
                           <ItemsContainer>
                             <Items
-                              fields={smdaFields ?? []}
-                              selectedFields={field.state.value.map(
+                              fields={smdaFields}
+                              projectFields={field.state.value.map(
                                 (f) => f.identifier,
                               )}
-                              itemLists={availableItems}
-                              itemType="field"
+                              itemListGrouped={{
+                                [DUMMYGROUP_NAME]: availableData.field,
+                              }}
                               operation="addition"
                             />
                           </ItemsContainer>
@@ -632,8 +693,9 @@ export function Edit({
                           <ItemsContainer>
                             <Items
                               fields={fieldList.map((f) => f.identifier)}
-                              itemLists={projectItems}
-                              itemType="country"
+                              itemListGrouped={{
+                                [DUMMYGROUP_NAME]: projectData.country,
+                              }}
                               operation="removal"
                             />
                           </ItemsContainer>
@@ -642,12 +704,11 @@ export function Edit({
                           <Label label="Country" />
                           <ItemsContainer>
                             <Items
-                              fields={smdaFields ?? []}
-                              selectedFields={fieldList.map(
-                                (f) => f.identifier,
-                              )}
-                              itemLists={availableItems}
-                              itemType="country"
+                              fields={smdaFields}
+                              projectFields={fieldList.map((f) => f.identifier)}
+                              itemListGrouped={{
+                                [DUMMYGROUP_NAME]: availableData.country,
+                              }}
                               operation="addition"
                             />
                           </ItemsContainer>
@@ -670,14 +731,13 @@ export function Edit({
                           value={field.state.value.uuid}
                           options={identifierUuidArrayToOptionsArray([
                             emptyIdentifierUuid() as CoordinateSystem,
-                            ...(smdaReferenceData?.coordinateSystemsOptions ??
-                              []),
+                            ...projectData.coordinateSystemsOptions,
                           ])}
                           loadingOptions={smdaMasterdata.isPending}
                           onChange={(value) => {
                             field.handleChange(
                               findOptionValueInNameUuidArray(
-                                smdaReferenceData?.coordinateSystems ?? [],
+                                projectData.coordinateSystems,
                                 value,
                               ) ?? (emptyIdentifierUuid() as CoordinateSystem),
                             );
@@ -702,14 +762,13 @@ export function Edit({
                           value={field.state.value.uuid}
                           options={identifierUuidArrayToOptionsArray([
                             emptyIdentifierUuid() as StratigraphicColumn,
-                            ...(smdaReferenceData?.stratigraphicColumnsOptions ??
-                              []),
+                            ...projectData.stratigraphicColumnsOptions,
                           ])}
                           loadingOptions={smdaMasterdata.isPending}
                           onChange={(value) => {
                             field.handleChange(
                               findOptionValueInNameUuidArray(
-                                smdaReferenceData?.stratigraphicColumns ?? [],
+                                projectData.stratigraphicColumns,
                                 value,
                               ) ??
                                 (emptyIdentifierUuid() as StratigraphicColumn),
@@ -726,11 +785,14 @@ export function Edit({
                     mode="array"
                     listeners={{
                       onSubmit: ({ fieldApi }) => {
-                        if (orphanItems.discovery.length > 0) {
+                        if (
+                          DUMMYGROUP_NAME in orphanData.discovery &&
+                          orphanData.discovery[DUMMYGROUP_NAME].length > 0
+                        ) {
                           handleNameUuidListOperation(
                             fieldApi,
                             "removal",
-                            orphanItems.discovery,
+                            orphanData.discovery[DUMMYGROUP_NAME],
                           );
                         }
                       },
@@ -743,14 +805,14 @@ export function Edit({
                           <ItemsContainer>
                             <Items
                               fields={fieldList.map((f) => f.identifier)}
-                              itemLists={projectItems}
-                              itemType="discovery"
+                              itemListGrouped={projectData.discovery}
                               operation="removal"
                             />
                           </ItemsContainer>
 
-                          {"discovery" in orphanItems &&
-                            orphanItems.discovery.length > 0 && (
+                          {DUMMYGROUP_NAME in orphanData.discovery &&
+                            orphanData.discovery[DUMMYGROUP_NAME].length >
+                              0 && (
                               <OrphanTypesContainer>
                                 <PageText>
                                   The following discoveries are currently
@@ -760,13 +822,13 @@ export function Edit({
                                   masterdata is saved.
                                 </PageText>
                                 <PageList>
-                                  {orphanItems.discovery.map<React.ReactNode>(
-                                    (discovery) => (
-                                      <List.Item key={discovery.uuid}>
-                                        {discovery.short_identifier}
-                                      </List.Item>
-                                    ),
-                                  )}
+                                  {orphanData.discovery[
+                                    DUMMYGROUP_NAME
+                                  ].map<React.ReactNode>((discovery) => (
+                                    <List.Item key={discovery.uuid}>
+                                      {discovery.short_identifier}
+                                    </List.Item>
+                                  ))}
                                 </PageList>
                               </OrphanTypesContainer>
                             )}
@@ -775,12 +837,9 @@ export function Edit({
                           <Label label="Discoveries" />
                           <ItemsContainer>
                             <Items
-                              fields={smdaFields ?? []}
-                              selectedFields={fieldList.map(
-                                (f) => f.identifier,
-                              )}
-                              itemLists={availableItems}
-                              itemType="discovery"
+                              fields={smdaFields}
+                              projectFields={fieldList.map((f) => f.identifier)}
+                              itemListGrouped={availableData.discovery}
                               operation="addition"
                             />
                           </ItemsContainer>
