@@ -149,6 +149,16 @@ const { useAppForm } = createFormHook({
   formComponents: { CancelButton, SubmitButton },
 });
 
+function resetEditData(
+  setProjectData: Dispatch<SetStateAction<FormMasterdataProject>>,
+  setAvailableData: Dispatch<SetStateAction<FormMasterdataBase>>,
+  setOrphanData: Dispatch<SetStateAction<FormMasterdataSub>>,
+) {
+  setProjectData(emptyFormMasterdataProject());
+  setAvailableData(emptyFormMasterdataBase());
+  setOrphanData(emptyFormMasterdataSub());
+}
+
 function handlePrepareEditData(
   masterdata: SmdaMasterdataResultGrouped,
   formApi: AnyFormApi,
@@ -557,7 +567,11 @@ export function Edit({
   }, [isOpen, projectMasterdata]);
 
   useEffect(() => {
-    if (smdaMasterdata.isSuccess && Object.keys(smdaMasterdata.data).length) {
+    if (
+      isOpen &&
+      smdaMasterdata.isSuccess &&
+      Object.keys(smdaMasterdata.data).length
+    ) {
       handlePrepareEditData(
         smdaMasterdata.data,
         form,
@@ -566,10 +580,17 @@ export function Edit({
         setOrphanData,
       );
     }
-  }, [form, form.setFieldMeta, smdaMasterdata.data, smdaMasterdata.isSuccess]);
+  }, [
+    form,
+    form.setFieldMeta,
+    isOpen,
+    smdaMasterdata.data,
+    smdaMasterdata.isSuccess,
+  ]);
 
   function handleClose({ formReset }: { formReset: () => void }) {
     formReset();
+    resetEditData(setProjectData, setAvailableData, setOrphanData);
     closeDialog();
   }
 
@@ -619,6 +640,7 @@ export function Edit({
   }: FormSubmitCallbackProps) => {
     toast.info(message);
     formReset();
+    resetEditData(setProjectData, setAvailableData, setOrphanData);
   };
 
   return (
