@@ -15,6 +15,12 @@ export type IdentifierUuidType =
 
 export type NameUuidType = IdentifierUuidType | DiscoveryItem;
 
+export function getNameFromNameUuidValue(value: NameUuidType) {
+  return "short_identifier" in value
+    ? value.short_identifier
+    : value.identifier;
+}
+
 export function emptyIdentifierUuid(): IdentifierUuidType {
   return {
     identifier: "(none)",

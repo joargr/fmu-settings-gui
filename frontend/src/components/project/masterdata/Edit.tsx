@@ -14,7 +14,13 @@ import {
   Updater,
 } from "@tanstack/react-form";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { toast } from "react-toastify";
 
 import {
@@ -31,7 +37,11 @@ import {
   projectPatchMasterdataMutation,
   smdaPostMasterdataOptions,
 } from "#client/@tanstack/react-query.gen";
-import { CancelButton, SubmitButton } from "#components/form/button";
+import {
+  CancelButton,
+  GeneralButton,
+  SubmitButton,
+} from "#components/form/button";
 import { Select } from "#components/form/field";
 import {
   FormSubmitCallbackProps,
@@ -54,11 +64,16 @@ import {
   findOptionValueInNameUuidArray,
   formContext,
   handleNameUuidListOperation,
+  handleNameUuidListOperationOnForm,
   identifierUuidArrayToOptionsArray,
   ListOperation,
-  useFieldContext,
 } from "#utils/form";
-import { emptyIdentifierUuid, IdentifierUuidType } from "#utils/model";
+import {
+  emptyIdentifierUuid,
+  getNameFromNameUuidValue,
+  IdentifierUuidType,
+  NameUuidType,
+} from "#utils/model";
 import { stringCompare } from "#utils/string";
 import {
   FieldsContainer,
@@ -76,6 +91,19 @@ type SmdaMasterdataResultGrouped = Record<string, SmdaMasterdataResult>;
 type SmdaMasterdataCoordinateSystemFields = {
   coordinateSystem: CoordinateSystem;
   fields: Array<FieldItem>;
+};
+
+type MasterdataItemType = CountryItem | DiscoveryItem | FieldItem;
+type ItemType = "country" | "discovery" | "field";
+
+type AffectedItems = {
+  initiator: {
+    itemType: ItemType;
+    item: MasterdataItemType;
+    operation: ListOperation;
+  };
+  requiresConfirmation: boolean;
+  items: Record<ItemType, Array<MasterdataItemType>>;
 };
 
 type ItemListGrouped<T> = Record<string, Array<T>>;
@@ -380,19 +408,90 @@ function handleErrorUnknownInitialValue(
   }));
 }
 
+function handleAffectedItems(
+  operation: ListOperation,
+  itemType: ItemType,
+  item: NameUuidType,
+  setAffectedItems: Dispatch<SetStateAction<AffectedItems | undefined>>,
+) {
+  const items = {} as Record<ItemType, Array<MasterdataItemType>>;
+
+  setAffectedItems({
+    initiator: { itemType, item, operation },
+    requiresConfirmation: false,
+    items,
+  });
+}
+
+function ConfirmItemOperationDialog({
+  isOpen,
+  affectedItems,
+  handleConfirmItemOperationDecision,
+}: {
+  isOpen: boolean;
+  affectedItems: AffectedItems | undefined;
+  handleConfirmItemOperationDecision: (confirm: boolean) => void;
+}) {
+  if (affectedItems === undefined) {
+    return;
+  }
+
+  const initiator = affectedItems.initiator;
+
+  return (
+    <EditDialog open={isOpen} $minWidth="30em">
+      <Dialog.Header>
+        <Dialog.Title>Move items</Dialog.Title>
+      </Dialog.Header>
+
+      <Dialog.CustomContent style={{ minHeight: "auto" }}>
+        <PageText>
+          The {initiator.itemType}{" "}
+          <strong>{getNameFromNameUuidValue(initiator.item)}</strong> has been
+          selected for{" "}
+          {initiator.operation === "addition" ? "addition to" : "removal from"}{" "}
+          the project.
+        </PageText>
+
+        <PageText>
+          The following items will also be{" "}
+          {initiator.operation === "addition" ? "added to" : "removed from"} the
+          project, as they are dependant on this {initiator.itemType}:
+        </PageText>
+      </Dialog.CustomContent>
+
+      <Dialog.Actions>
+        <GeneralButton
+          label="OK"
+          onClick={() => {
+            handleConfirmItemOperationDecision(true);
+          }}
+        />
+        <CancelButton
+          onClick={() => {
+            handleConfirmItemOperationDecision(false);
+          }}
+        />
+      </Dialog.Actions>
+    </EditDialog>
+  );
+}
+
 function Items({
   fields,
   projectFields,
+  itemType,
   itemListGrouped,
   operation,
+  setAffectedItems,
 }: {
   fields: Array<string>;
   projectFields?: Array<string>;
-  itemListGrouped: ItemListGrouped<CountryItem | DiscoveryItem | FieldItem>;
+  itemType: ItemType;
+  itemListGrouped: ItemListGrouped<MasterdataItemType>;
   operation: ListOperation;
+  setAffectedItems: Dispatch<SetStateAction<AffectedItems | undefined>>;
 }) {
-  const fieldContext = useFieldContext();
-
   const isDummyGroup =
     Object.keys(itemListGrouped).length === 1 &&
     DUMMYGROUP_NAME in itemListGrouped;
@@ -415,12 +514,8 @@ function Items({
                 itemListGrouped[group]
                   .sort((a, b) =>
                     stringCompare(
-                      "short_identifier" in a
-                        ? a.short_identifier
-                        : a.identifier,
-                      "short_identifier" in b
-                        ? b.short_identifier
-                        : b.identifier,
+                      getNameFromNameUuidValue(a),
+                      getNameFromNameUuidValue(b),
                     ),
                   )
                   .map<React.ReactNode>((item) => {
@@ -428,11 +523,7 @@ function Items({
                     if (isRelatedToProjectField && operation === "addition") {
                       contents.push(<Icon name="arrow_back" />);
                     }
-                    contents.push(
-                      "short_identifier" in item
-                        ? item.short_identifier
-                        : item.identifier,
-                    );
+                    contents.push(getNameFromNameUuidValue(item));
                     if (operation === "removal") {
                       contents.push(<Icon name="arrow_forward" />);
                     }
@@ -443,10 +534,11 @@ function Items({
                         onClick={
                           isRelatedToProjectField
                             ? () => {
-                                handleNameUuidListOperation(
-                                  fieldContext,
+                                handleAffectedItems(
                                   operation,
+                                  itemType,
                                   item,
+                                  setAffectedItems,
                                 );
                               }
                             : undefined
@@ -479,6 +571,8 @@ export function Edit({
   closeDialog: () => void;
 }) {
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [confirmItemOperationDialogOpen, setConfirmItemOperationDialogOpen] =
+    useState(false);
   const [smdaFields, setSmdaFields] = useState<Array<string>>([]);
   const [projectData, setProjectData] = useState<FormMasterdataProject>(
     emptyFormMasterdataProject(),
@@ -489,6 +583,9 @@ export function Edit({
   const [orphanData, setOrphanData] = useState<FormMasterdataSub>(
     emptyFormMasterdataSub(),
   );
+  const [affectedItems, setAffectedItems] = useState<
+    AffectedItems | undefined
+  >();
 
   const queryClient = useQueryClient();
 
@@ -556,6 +653,20 @@ export function Edit({
     },
   });
 
+  const handleAffectedItemsListOperation = useCallback(() => {
+    if (affectedItems === undefined) {
+      return;
+    }
+    const initiator = affectedItems.initiator;
+
+    handleNameUuidListOperationOnForm(
+      form,
+      initiator.operation,
+      initiator.itemType,
+      initiator.item,
+    );
+  }, [affectedItems, form]);
+
   useEffect(() => {
     if (isOpen) {
       setSmdaFields(
@@ -588,6 +699,17 @@ export function Edit({
     smdaMasterdata.isSuccess,
   ]);
 
+  useEffect(() => {
+    if (affectedItems !== undefined) {
+      if (affectedItems.requiresConfirmation) {
+        setConfirmItemOperationDialogOpen(true);
+      } else {
+        handleAffectedItemsListOperation();
+        setAffectedItems(undefined);
+      }
+    }
+  }, [affectedItems, handleAffectedItemsListOperation]);
+
   function handleClose({ formReset }: { formReset: () => void }) {
     formReset();
     resetEditData(setProjectData, setAvailableData, setOrphanData);
@@ -614,6 +736,14 @@ export function Edit({
         }, smdaFields)
         .sort((a, b) => stringCompare(a, b)),
     );
+  }
+
+  function handleConfirmItemOperationDecision(confirm: boolean) {
+    if (confirm) {
+      handleAffectedItemsListOperation();
+    }
+    setAffectedItems(undefined);
+    setConfirmItemOperationDialogOpen(false);
   }
 
   const mutationCallback = ({
@@ -651,6 +781,12 @@ export function Edit({
         closeDialog={closeSearchDialog}
       />
 
+      <ConfirmItemOperationDialog
+        isOpen={confirmItemOperationDialogOpen}
+        affectedItems={affectedItems}
+        handleConfirmItemOperationDecision={handleConfirmItemOperationDecision}
+      />
+
       <EditDialog open={isOpen} $maxWidth="200em">
         <form
           onSubmit={(e) => {
@@ -678,10 +814,12 @@ export function Edit({
                               fields={field.state.value.map(
                                 (f) => f.identifier,
                               )}
+                              itemType="field"
                               itemListGrouped={{
                                 [DUMMYGROUP_NAME]: projectData.field,
                               }}
                               operation="removal"
+                              setAffectedItems={setAffectedItems}
                             />
                           </ItemsContainer>
                         </div>
@@ -693,10 +831,12 @@ export function Edit({
                               projectFields={field.state.value.map(
                                 (f) => f.identifier,
                               )}
+                              itemType="field"
                               itemListGrouped={{
                                 [DUMMYGROUP_NAME]: availableData.field,
                               }}
                               operation="addition"
+                              setAffectedItems={setAffectedItems}
                             />
                           </ItemsContainer>
                         </div>
@@ -722,7 +862,9 @@ export function Edit({
                               itemListGrouped={{
                                 [DUMMYGROUP_NAME]: projectData.country,
                               }}
+                              itemType="country"
                               operation="removal"
+                              setAffectedItems={setAffectedItems}
                             />
                           </ItemsContainer>
                         </div>
@@ -732,10 +874,12 @@ export function Edit({
                             <Items
                               fields={smdaFields}
                               projectFields={fieldList.map((f) => f.identifier)}
+                              itemType="country"
                               itemListGrouped={{
                                 [DUMMYGROUP_NAME]: availableData.country,
                               }}
                               operation="addition"
+                              setAffectedItems={setAffectedItems}
                             />
                           </ItemsContainer>
                         </div>
@@ -831,8 +975,10 @@ export function Edit({
                           <ItemsContainer>
                             <Items
                               fields={fieldList.map((f) => f.identifier)}
+                              itemType="discovery"
                               itemListGrouped={projectData.discovery}
                               operation="removal"
+                              setAffectedItems={setAffectedItems}
                             />
                           </ItemsContainer>
 
@@ -865,8 +1011,10 @@ export function Edit({
                             <Items
                               fields={smdaFields}
                               projectFields={fieldList.map((f) => f.identifier)}
+                              itemType="discovery"
                               itemListGrouped={availableData.discovery}
                               operation="addition"
+                              setAffectedItems={setAffectedItems}
                             />
                           </ItemsContainer>
                         </div>
