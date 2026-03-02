@@ -1,7 +1,4 @@
-import {
-  InteractionRequiredAuthError,
-  type IPublicClientApplication,
-} from "@azure/msal-browser";
+import type { IPublicClientApplication } from "@azure/msal-browser";
 import type {
   UseMutateAsyncFunction,
   UseMutateFunction,
@@ -10,7 +7,6 @@ import type {
   AxiosError,
   AxiosResponse,
   AxiosResponseHeaders,
-  InternalAxiosRequestConfig,
   RawAxiosResponseHeaders,
 } from "axios";
 import type { Dispatch, SetStateAction } from "react";
@@ -23,8 +19,6 @@ import type {
   SessionPostSessionData,
   SessionResponse,
 } from "#client";
-import { sessionPatchAccessToken } from "#client";
-import { client } from "#client/client.gen";
 import { ssoScopes } from "#config";
 import { HTTP_STATUS_UNAUTHORIZED } from "./api";
 import {
@@ -38,6 +32,7 @@ const FRAGMENTTOKEN_PREFIX = "#token=";
 const APITOKEN_HEADER = "x-fmu-settings-api";
 const UPSTREAMSOURCE_HEADER = "x-upstream-source";
 const APIURL_SESSION = "/api/v1/session/";
+const APIURL_SMDA_HEALTHCHECK = "/api/v1/smda/health";
 
 export type TokenStatus = {
   present?: boolean;
@@ -90,6 +85,10 @@ export function isApiTokenNonEmpty(apiToken: string) {
 
 export function isApiUrlSession(url?: string): boolean {
   return url === APIURL_SESSION;
+}
+
+function isApiUrlSmdaHealthcheck(url?: string): boolean {
+  return url === APIURL_SMDA_HEALTHCHECK;
 }
 
 export function isExternalApi(
@@ -147,10 +146,6 @@ export const responseInterceptorFulfilled =
     return response;
   };
 
-type RetryableRequestConfig = InternalAxiosRequestConfig & {
-  _retried?: boolean;
-};
-
 export const responseInterceptorRejected =
   (
     apiToken: string,
@@ -158,8 +153,7 @@ export const responseInterceptorRejected =
     apiTokenStatusValid: boolean,
     setApiTokenStatus: Dispatch<SetStateAction<TokenStatus>>,
     setRequestSessionCreation: Dispatch<SetStateAction<boolean>>,
-    msalInstance?: IPublicClientApplication,
-    setAccessToken?: Dispatch<SetStateAction<string>>,
+    setRequestAcquireSsoAccessToken: Dispatch<SetStateAction<boolean>>,
   ) =>
   async (error: AxiosError) => {
     if (error.status === HTTP_STATUS_UNAUTHORIZED) {
@@ -172,25 +166,8 @@ export const responseInterceptorRejected =
           setApiTokenStatus(() => ({}));
         }
       } else if (isExternalApi(error.response?.headers)) {
-        const config = error.config as RetryableRequestConfig | undefined;
-        if (msalInstance && config && !config._retried) {
-          config._retried = true;
-          try {
-            const result = await msalInstance.acquireTokenSilent({
-              scopes: ssoScopes,
-            });
-            setAccessToken?.(result.accessToken);
-            await sessionPatchAccessToken({
-              body: { id: "smda_api", key: result.accessToken },
-              throwOnError: true,
-            });
-
-            return await client.instance(config);
-          } catch (tokenError) {
-            if (tokenError instanceof InteractionRequiredAuthError) {
-              void msalInstance.acquireTokenRedirect({ scopes: ssoScopes });
-            }
-          }
+        if (!isApiUrlSmdaHealthcheck(error.response?.config.url)) {
+          setRequestAcquireSsoAccessToken(true);
         }
       } else {
         setRequestSessionCreation(true);
