@@ -2,11 +2,19 @@ import {
   Button,
   Dialog,
   Icon,
+  Popover,
   Tooltip,
   TopBar,
   Typography,
 } from "@equinor/eds-core-react";
-import { comment } from "@equinor/eds-icons";
+import {
+  assignment,
+  check,
+  checkbox,
+  comment,
+  warning_filled,
+} from "@equinor/eds-icons";
+import { tokens } from "@equinor/eds-tokens";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -14,6 +22,7 @@ import fmuLogo from "#assets/fmu-logo.svg";
 import type { LockInfo } from "#client/types.gen";
 import { LockIcon } from "#components/LockStatus";
 import { useProject } from "#services/project";
+import { useTaskList } from "#services/tasks";
 import { GenericDialog, PageText } from "#styles/common";
 import { AppMenu } from "./AppMenu";
 import {
@@ -22,8 +31,17 @@ import {
   HeaderContainer,
   ProjectInfoContainer,
   ProjectInfoItemContainer,
+  TaskBadgeCount,
+  TaskBadgeDone,
+  TaskBadgeWrapper,
+  TaskIndicatorContainer,
   TopBarContainer,
 } from "./Header.style";
+import {
+  TaskCompletedLabel,
+  TaskRow,
+  TasksProgressLabel,
+} from "./home/TaskList.style";
 
 function LockStatusIcon({
   isReadOnly,
@@ -159,6 +177,88 @@ function FeedbackDialog() {
   );
 }
 
+function TaskIndicator() {
+  const tasks = useTaskList();
+  const [isOpen, setIsOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+  if (tasks.length === 0) {
+    return null;
+  }
+
+  const pendingCount = tasks.filter((t) => !t.done).length;
+  const allDone = pendingCount === 0;
+
+  const handleToggle = () => {
+    setIsOpen((prev) => !prev);
+  };
+  const handleClose = () => {
+    setIsOpen(false);
+  };
+
+  return (
+    <TaskIndicatorContainer>
+      <HeaderActionButton
+        aria-haspopup
+        aria-expanded={isOpen}
+        onClick={handleToggle}
+        ref={setAnchorEl}
+      >
+        <TaskBadgeWrapper>
+          <Icon data={assignment} />
+          {allDone ? (
+            <TaskBadgeDone>
+              <Icon data={check} />
+            </TaskBadgeDone>
+          ) : (
+            <TaskBadgeCount>{pendingCount}</TaskBadgeCount>
+          )}
+        </TaskBadgeWrapper>
+      </HeaderActionButton>
+
+      <Popover
+        open={isOpen}
+        onClose={handleClose}
+        anchorEl={anchorEl}
+        placement="bottom-end"
+        trapFocus
+      >
+        <Popover.Header>
+          <Popover.Title>Project setup checklist</Popover.Title>
+        </Popover.Header>
+        <Popover.Content>
+          <TasksProgressLabel
+            $allDone={allDone}
+            $marginBottom={tokens.spacings.comfortable.small}
+          >
+            {tasks.length - pendingCount} / {tasks.length} completed
+          </TasksProgressLabel>
+          {tasks.map((task) => (
+            <TaskRow key={task.id}>
+              <Icon
+                data={task.done ? checkbox : warning_filled}
+                size={16}
+                color={
+                  task.done
+                    ? tokens.colors.interactive.success__resting.hex
+                    : tokens.colors.interactive.warning__resting.hex
+                }
+              />
+              {task.done ? (
+                <TaskCompletedLabel>{task.label}</TaskCompletedLabel>
+              ) : (
+                <Typography link as={Link} to={task.to} onClick={handleClose}>
+                  {task.label}
+                </Typography>
+              )}
+            </TaskRow>
+          ))}
+        </Popover.Content>
+      </Popover>
+    </TaskIndicatorContainer>
+  );
+}
+
 export function Header() {
   return (
     <HeaderContainer>
@@ -178,6 +278,7 @@ export function Header() {
           </TopBarContainer>
         </TopBar.Header>
         <TopBar.Actions>
+          <TaskIndicator />
           <FeedbackDialog />
           <ProjectInfo />
         </TopBar.Actions>
