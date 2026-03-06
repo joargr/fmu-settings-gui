@@ -56,9 +56,11 @@ const { useAppForm: useAppFormProjectSelectorForm } = createFormHook({
 type ValueSource = "recentProjectPath" | "projectPath" | "";
 
 function ProjectSelectorForm({
+  actionLabel,
   closeDialog,
   isDialogOpen,
 }: {
+  actionLabel: string;
   closeDialog: () => void;
   isDialogOpen: boolean;
 }) {
@@ -179,7 +181,7 @@ function ProjectSelectorForm({
         }}
       >
         <Dialog.Header>
-          <Dialog.Title>Select project</Dialog.Title>
+          <Dialog.Title>{actionLabel}</Dialog.Title>
         </Dialog.Header>
 
         <Dialog.CustomContent>
@@ -384,7 +386,11 @@ function ConfirmInitProjectDialog({
   );
 }
 
-export function ProjectSelector() {
+export function ProjectSelector({
+  actionLabel = "Select project",
+}: {
+  actionLabel?: string;
+}) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleOpen = () => {
@@ -396,8 +402,9 @@ export function ProjectSelector() {
 
   return (
     <>
-      <Button onClick={handleOpen}>Select project</Button>
+      <Button onClick={handleOpen}>{actionLabel}</Button>
       <ProjectSelectorForm
+        actionLabel={actionLabel}
         closeDialog={handleClose}
         isDialogOpen={isDialogOpen}
       />
