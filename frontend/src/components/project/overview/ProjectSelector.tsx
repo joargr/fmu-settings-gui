@@ -12,6 +12,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useRouteContext } from "@tanstack/react-router";
 import { type ChangeEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
@@ -28,6 +29,7 @@ import {
 import { CancelButton, SubmitButton } from "#components/form/button";
 import { TextField } from "#components/form/field";
 import { EditDialog, PageSectionSpacer, PageText } from "#styles/common";
+import { HTTP_STATUS_UNPROCESSABLE_CONTENT } from "#utils/api";
 import {
   fieldContext,
   formContext,
@@ -69,7 +71,7 @@ function ProjectSelectorForm({
   const [helperTextRecentProjects, sethelperTextRecentProjects] = useState("");
   const [helperTextProjectPath, setHelperTextProjectPath] = useState("");
   const [valueSource, setValueSource] = useState<ValueSource>("");
-  const codes = [403, 404, 409];
+  const codes = [403, 404, 409, HTTP_STATUS_UNPROCESSABLE_CONTENT];
 
   const closeProjectSelector = ({ formReset }: { formReset: () => void }) => {
     sethelperTextRecentProjects("");
@@ -80,6 +82,10 @@ function ProjectSelectorForm({
   };
 
   const queryClient = useQueryClient();
+  const setSelectProjectInvalidAttempt = useRouteContext({
+    from: "__root__",
+    select: (context) => context.setSelectProjectInvalidAttempt,
+  });
   const { mutate, isPending } = useMutation({
     ...projectPostProjectMutation(),
     onSuccess: () => {
@@ -133,6 +139,16 @@ function ProjectSelectorForm({
           onError: (error) => {
             const detail = (error.response?.data as { detail: string }).detail;
             const status = error.status;
+
+            if (status === HTTP_STATUS_UNPROCESSABLE_CONTENT) {
+              void queryClient.invalidateQueries({
+                queryKey: projectGetProjectQueryKey(),
+              });
+              closeProjectSelector({ formReset: formApi.reset });
+              setSelectProjectInvalidAttempt((current) => current + 1);
+
+              return;
+            }
 
             if (status && codes.includes(status)) {
               if (
