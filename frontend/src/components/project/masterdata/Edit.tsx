@@ -24,6 +24,7 @@ import {
   projectPatchMasterdataMutation,
   smdaPostMasterdataOptions,
 } from "#client/@tanstack/react-query.gen";
+import { ConfirmCloseDialog } from "#components/common";
 import {
   CancelButton,
   GeneralButton,
@@ -55,6 +56,7 @@ import {
   handleNameUuidListOperationOnForm,
   identifierUuidArrayToOptionsArray,
   type ListOperation,
+  useConfirmClose,
 } from "#utils/form";
 import {
   emptyIdentifierUuid,
@@ -390,6 +392,20 @@ export function Edit({
     },
   });
 
+  const {
+    confirmCloseDialogOpen,
+    handleCloseRequest,
+    handleConfirmCloseDecision,
+  } = useConfirmClose({
+    formContext: form,
+    isOpen,
+    closeDialog,
+    onCloseConfirmed: () => {
+      resetEditData(setProjectData, setAvailableData, setOrphanData);
+    },
+    isReadOnly: projectReadOnly,
+  });
+
   const handleItemsOperation = useCallback(() => {
     if (selectedItems === undefined || itemsCount(selectedItems.items) === 0) {
       return;
@@ -512,12 +528,6 @@ export function Edit({
     startItemsOperation,
   ]);
 
-  function handleClose({ formReset }: { formReset: () => void }) {
-    formReset();
-    resetEditData(setProjectData, setAvailableData, setOrphanData);
-    closeDialog();
-  }
-
   function openSearchDialog() {
     setSearchDialogOpen(true);
   }
@@ -592,7 +602,17 @@ export function Edit({
         }
       />
 
-      <EditDialog open={isOpen} $maxWidth="200em">
+      <ConfirmCloseDialog
+        isOpen={confirmCloseDialogOpen}
+        handleConfirmCloseDecision={handleConfirmCloseDecision}
+      />
+
+      <EditDialog
+        open={isOpen}
+        isDismissable={true}
+        onClose={handleCloseRequest}
+        $maxWidth="200em"
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -839,8 +859,9 @@ export function Edit({
                     />
 
                     <form.CancelButton
-                      onClick={() => {
-                        handleClose({ formReset: form.reset });
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleCloseRequest();
                       }}
                     />
                   </>
