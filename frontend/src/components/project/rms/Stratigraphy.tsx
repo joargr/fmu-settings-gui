@@ -478,7 +478,11 @@ export function Stratigraphy({
       </PageText>
 
       {projectHorizons.length ? (
-        <StratigraphicFramework horizons={projectHorizons} zones={projectZones}>
+        <StratigraphicFramework
+          horizons={projectHorizons}
+          zones={projectZones}
+          disablePointerEvents={true}
+        >
           <Zones />
         </StratigraphicFramework>
       ) : (
