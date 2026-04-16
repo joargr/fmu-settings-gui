@@ -22,7 +22,6 @@ export const ZoneItem = styled.div.attrs<{ $zoneGrid: ZonePlacementInfo }>(
 export const ZoneSystems = styled.div`
 	flex: 1;
   padding: ${tokens.spacings.comfortable.x_small};
-	padding-bottom: 0;
 
 	display: flex;
 	gap: ${tokens.spacings.comfortable.small};
@@ -30,12 +29,12 @@ export const ZoneSystems = styled.div`
 
 export const ZoneActions = styled.div`
 	flex-shrink: 0;
-	height: 24px;
+	height: 20px;
 	cursor: pointer;
 
 	display: flex;
 	justify-content: center;
-	align-items: center;
+	align-items: start;
 `;
 
 export const ZoneSystem = styled.div`
