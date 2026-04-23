@@ -63,11 +63,13 @@ export const ZoneSystemName = styled.div`
 	line-height: ${tokens.typography.navigation.button.lineHeight};
 `;
 
-export const ZoneName = styled.div.attrs<{ $targetSystem?: boolean }>(
-  (props) => ({
-    $targetSystem: props.$targetSystem ?? false,
-  }),
-)`
+export const ZoneName = styled.div.attrs<{
+  $targetSystem?: boolean;
+  $missingvalue?: boolean;
+}>((props) => ({
+  $targetSystem: props.$targetSystem ?? false,
+  $missingvalue: props.$missingvalue ?? false,
+}))`
 	padding: ${tokens.spacings.comfortable.x_small} ${tokens.spacings.comfortable.small};
 	background: ${(props) =>
     props.$targetSystem
@@ -82,6 +84,7 @@ export const ZoneName = styled.div.attrs<{ $targetSystem?: boolean }>(
       : tokens.colors.text.static_icons__default.hex};
 	font-size: ${tokens.typography.navigation.button.fontSize};
 	font-weight: ${tokens.typography.navigation.button.fontWeight};
+	font-style: ${(props) => (props.$missingvalue ? "italic" : "normal")};
 	line-height: ${tokens.typography.navigation.button.lineHeight};
 	white-space: nowrap;
 `;

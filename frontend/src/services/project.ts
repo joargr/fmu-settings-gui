@@ -22,18 +22,28 @@ import {
 } from "#client/@tanstack/react-query.gen";
 import type {
   LockStatus,
-  MappingGroup,
+  MappingGroupResponse,
   ProjectGetMappingsData,
 } from "#client/types.gen";
 import { projectLockStatusRefetchInterval } from "#config";
 import { HTTP_STATUS_UNAUTHORIZED } from "#utils/api";
 import type { QueryServiceBase } from "#utils/query";
 
-type MappingsPathOptions = ProjectGetMappingsData["path"];
+export type MappingsPathOptions = ProjectGetMappingsData["path"];
 
 type GetProject = QueryServiceBase<FmuProject> & { lockStatus?: LockStatus };
 
-type GetProjectMappings = QueryServiceBase<MappingGroup[]>;
+type GetProjectMappings = QueryServiceBase<MappingGroupResponse[]>;
+
+type MappingsPathsKeys = "stratigraphyRmsSmda";
+
+export const mappingsPaths: Record<MappingsPathsKeys, MappingsPathOptions> = {
+  stratigraphyRmsSmda: {
+    mapping_type: "stratigraphy",
+    source_system: "rms",
+    target_system: "smda",
+  },
+} as const;
 
 export function useProject(options?: Options<ProjectGetProjectData>) {
   const { data: project } = useSuspenseQuery(

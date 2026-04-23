@@ -1,4 +1,8 @@
-import { useProject, useProjectMappings } from "#services/project";
+import {
+  mappingsPaths,
+  useProject,
+  useProjectMappings,
+} from "#services/project";
 import type { FileRouteTypes } from "../routeTree.gen";
 
 export type Task = {
@@ -10,11 +14,7 @@ export type Task = {
 
 export function useTaskList(): Task[] {
   const project = useProject();
-  const mappings = useProjectMappings({
-    mapping_type: "stratigraphy",
-    source_system: "rms",
-    target_system: "smda",
-  });
+  const mappings = useProjectMappings(mappingsPaths.stratigraphyRmsSmda);
 
   if (!project.status || !project.data) {
     return [];
