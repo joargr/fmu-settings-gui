@@ -60,6 +60,8 @@ export const GridLine = styled.div<{
 
 export const HorizonItem = styled.div`
   grid-column: 1;
+  align-self: self-start;
+  padding-top: 2px;
 
   button {
     height: 100%;  
