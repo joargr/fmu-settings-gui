@@ -6,25 +6,18 @@ import type {
   StratigraphyIdentifierMapping,
 } from "#client";
 import type { OptionProps } from "#components/form/field";
-import type {
-  SmdaZone,
-  StratUnitRelation,
-  ZoneMapping,
-  ZoneMappings,
-} from "./types";
+import type { StratUnitRelation, ZoneMapping, ZoneMappings } from "./types";
 
-export function createRmsZonesLookup(mappings: MappingGroupResponse[]) {
-  const lookup: Record<string, SmdaZone> = {};
+export function createSmdaMappingsLookup(mappings: MappingGroupResponse[]) {
+  const lookup: Record<string, MappingGroupResponse> = {};
 
-  mappings.forEach((sz) => {
-    sz.mappings.forEach((rz) => {
-      if (rz.relation_type === "primary" || rz.relation_type === "equivalent") {
-        lookup[rz.source_id] = {
-          name: sz.official_name,
-          uuid: sz.target_uuid ?? "",
-        };
-      }
-    });
+  mappings.forEach((mapping) => {
+    const primary = mapping.mappings.find(
+      (m) => m.relation_type === "primary" || m.relation_type === "equivalent",
+    );
+    if (primary) {
+      lookup[primary.source_id] = mapping;
+    }
   });
 
   return lookup;
@@ -109,6 +102,21 @@ export function createMutationValue(
         target_id: mapping.smdaName,
         target_uuid: mapping.smdaUuid,
       } as StratigraphyIdentifierMapping);
+
+      mapping.aliases.forEach((alias) => {
+        const name_trimmed = alias.trim();
+        if (name_trimmed !== "") {
+          result.push({
+            mapping_type: mappingType,
+            source_system: sourceSystem,
+            target_system: targetSystem,
+            relation_type: "alias",
+            source_id: name_trimmed,
+            target_id: mapping.smdaName,
+            target_uuid: mapping.smdaUuid,
+          } as StratigraphyIdentifierMapping);
+        }
+      });
     }
   });
 

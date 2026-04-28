@@ -71,12 +71,15 @@ export const ZoneName = styled.div.attrs<{
   $missingvalue: props.$missingvalue ?? false,
 }))`
 	padding: ${tokens.spacings.comfortable.x_small} ${tokens.spacings.comfortable.small};
+	border-radius: ${tokens.shape.corners.borderRadius};
+	border-top-left-radius: 0%;
 	background: ${(props) =>
     props.$targetSystem
       ? tokens.colors.infographic.substitute__blue_overcast.hex
       : tokens.colors.infographic.primary__mist_blue.hex};
-	border-radius: ${tokens.shape.corners.borderRadius};
-	border-top-left-radius: 0%;
+
+	display: flex;
+	gap: ${tokens.spacings.comfortable.small};
 
 	color: ${(props) =>
     props.$targetSystem
@@ -87,4 +90,8 @@ export const ZoneName = styled.div.attrs<{
 	font-style: ${(props) => (props.$missingvalue ? "italic" : "normal")};
 	line-height: ${tokens.typography.navigation.button.lineHeight};
 	white-space: nowrap;
+
+	.aliases {
+		color: ${tokens.colors.infographic.substitute__purple_berry.hex}
+	}
 `;

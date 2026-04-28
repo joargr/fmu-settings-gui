@@ -1,5 +1,5 @@
 import { Dialog, Icon } from "@equinor/eds-core-react";
-import { edit } from "@equinor/eds-icons";
+import { edit, link } from "@equinor/eds-icons";
 import { createFormHook } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -18,13 +18,27 @@ import {
 } from "#client/@tanstack/react-query.gen";
 import { ConfirmCloseDialog } from "#components/common";
 import { CancelButton, SubmitButton } from "#components/form/button";
-import { type OptionProps, Select } from "#components/form/field";
+import {
+  ArrayTextAddItem,
+  ArrayTextField,
+  type OptionProps,
+  Select,
+} from "#components/form/field";
+import {
+  ArrayTextFieldContainer,
+  CommonInputWrapper,
+} from "#components/form/field.style";
 import type {
   FormSubmitCallbackProps,
   MutationCallbackProps,
 } from "#components/form/form";
 import { mappingsPaths } from "#services/project";
-import { EditDialog, PageText, WarningBox } from "#styles/common";
+import {
+  EditDialog,
+  PageSectionSpacer,
+  PageText,
+  WarningBox,
+} from "#styles/common";
 import {
   HTTP_STATUS_UNPROCESSABLE_CONTENT,
   httpValidationErrorToString,
@@ -34,7 +48,7 @@ import { useFrameworkData } from "../stratigraphicFramework/functions";
 import { StratigraphicFramework } from "../stratigraphicFramework/StratigraphicFramework";
 import {
   createMutationValue,
-  createRmsZonesLookup,
+  createSmdaMappingsLookup,
   createSmdaNameOptions,
   updateZoneMappings,
 } from "./functions";
@@ -53,7 +67,11 @@ import { emptyName } from "./utils";
 const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { Select },
+  fieldComponents: {
+    ArrayTextAddItem,
+    ArrayTextField,
+    Select,
+  },
   formComponents: { CancelButton, SubmitButton },
 });
 
@@ -146,6 +164,36 @@ function Edit({
                   }}
                 />
               )}
+            </form.AppField>
+
+            <PageSectionSpacer />
+
+            <form.AppField name="aliases" mode="array">
+              {(field) => {
+                return (
+                  <CommonInputWrapper label="Aliases for RMS name">
+                    <ArrayTextFieldContainer>
+                      {field.state.value.map((val, idx) => (
+                        <form.AppField key={val} name={`aliases[${idx}]`}>
+                          {() => (
+                            <field.ArrayTextField
+                              removeValue={() => {
+                                field.removeValue(idx);
+                              }}
+                            />
+                          )}
+                        </form.AppField>
+                      ))}
+                      <field.ArrayTextAddItem
+                        emptyText="No aliases defined"
+                        pushEmpty={() => {
+                          field.pushValue("");
+                        }}
+                      />
+                    </ArrayTextFieldContainer>
+                  </CommonInputWrapper>
+                );
+              }}
             </form.AppField>
           </Dialog.CustomContent>
 
@@ -245,18 +293,22 @@ function Zones({
   });
 
   useEffect(() => {
-    const rmsLookup = createRmsZonesLookup(mappings);
+    const lookup = createSmdaMappingsLookup(mappings);
     const zoneMappings: ZoneMappings = {};
 
     frameworkData.zones.forEach((rmsZone) => {
-      zoneMappings[rmsZone.name] = {
+      const key = rmsZone.name;
+      zoneMappings[key] = {
         rmsName: rmsZone.name,
-        ...(rmsZone.name in rmsLookup
+        ...(key in lookup
           ? {
-              smdaName: rmsLookup[rmsZone.name].name,
-              smdaUuid: rmsLookup[rmsZone.name].uuid,
+              smdaName: lookup[key].official_name,
+              smdaUuid: lookup[key].target_uuid ?? "",
+              aliases: lookup[key].mappings
+                .filter((mapping) => mapping.relation_type === "alias")
+                .map((alias) => alias.source_id),
             }
-          : { smdaName: "", smdaUuid: "" }),
+          : { smdaName: "", smdaUuid: "", aliases: [] }),
       };
     });
     setZoneMappings(zoneMappings);
@@ -315,20 +367,20 @@ function Zones({
 
   return (
     <>
-      <Edit
-        zoneMapping={activeZoneMapping}
-        smdaNameOptions={smdaNameOptions}
-        projectReadOnly={projectReadOnly}
-        mutationIsPending={mappingsMutation.isPending}
-        mutationCallback={mutationCallback}
-        isOpen={editDialogOpen}
-        closeDialog={closeEditDialog}
-      />
+      {editDialogOpen && (
+        <Edit
+          zoneMapping={activeZoneMapping}
+          smdaNameOptions={smdaNameOptions}
+          projectReadOnly={projectReadOnly}
+          mutationIsPending={mappingsMutation.isPending}
+          mutationCallback={mutationCallback}
+          isOpen={editDialogOpen}
+          closeDialog={closeEditDialog}
+        />
+      )}
 
       {frameworkData.zones.map((zone) => {
         const grid = frameworkData.zoneGridPlacement.get(zone.name);
-        const temp_show_zone_colors =
-          (zone.stratigraphic_column_name?.length ?? 0) < 0; // > shows colours, < doesn't
 
         if (!grid) {
           return null;
@@ -336,22 +388,32 @@ function Zones({
 
         const hasSmdaName =
           zone.name in zoneMappings && zoneMappings[zone.name].smdaName !== "";
+        const aliasCount =
+          zone.name in zoneMappings
+            ? zoneMappings[zone.name].aliases.length
+            : 0;
 
         return (
           <ZoneItem key={zone.name} $zoneGrid={grid}>
             <ZoneSystems>
-              <ZoneSystem
-                style={temp_show_zone_colors ? { background: "lightblue" } : {}}
-              >
+              <ZoneSystem>
                 <ZoneInfo>
                   <ZoneSystemName>RMS</ZoneSystemName>
-                  <ZoneName>{zone.name}</ZoneName>
+                  <ZoneName>
+                    {zone.name}
+                    {aliasCount > 0 && (
+                      <Icon
+                        className="aliases"
+                        data={link}
+                        title={`${aliasCount === 1 ? "Alias" : "Aliases"}: ${zoneMappings[zone.name].aliases.join(", ")}`}
+                        size={16}
+                      />
+                    )}
+                  </ZoneName>
                 </ZoneInfo>
               </ZoneSystem>
 
-              <ZoneSystem
-                style={temp_show_zone_colors ? { background: "salmon" } : {}}
-              >
+              <ZoneSystem>
                 <ZoneInfo>
                   <ZoneSystemName>SMDA</ZoneSystemName>
                   <ZoneName $targetSystem={true} $missingvalue={!hasSmdaName}>

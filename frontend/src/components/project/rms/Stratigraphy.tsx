@@ -481,7 +481,7 @@ export function Stratigraphy({
         <StratigraphicFramework
           horizons={projectHorizons}
           zones={projectZones}
-          disablePointerEvents={true}
+          disablePointerEvents={false}
         >
           <Zones />
         </StratigraphicFramework>
