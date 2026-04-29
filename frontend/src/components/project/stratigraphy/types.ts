@@ -2,6 +2,7 @@ import type { StratigraphicUnit } from "#client";
 
 export type ZoneMapping = {
   rmsName: string;
+  unmappable: boolean;
   smdaName: string;
   smdaUuid: string;
   aliases: string[];
@@ -15,3 +16,5 @@ export type StratUnitRelation = Pick<
 > & {
   children: StratUnitRelation[];
 };
+
+export type SpecialOptionId = "empty" | "divider" | "unmappableZone";

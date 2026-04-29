@@ -50,6 +50,7 @@ import {
   createMutationValue,
   createSmdaMappingsLookup,
   createSmdaNameOptions,
+  handleErrorUnknownInitialValue,
   updateZoneMappings,
 } from "./functions";
 import {
@@ -62,7 +63,12 @@ import {
   ZoneSystems,
 } from "./Overview.style";
 import type { ZoneMapping, ZoneMappings } from "./types";
-import { emptyName } from "./utils";
+import {
+  emptyName,
+  specialOptions,
+  tempUnmappable,
+  validateSelectValue,
+} from "./utils";
 
 const { useAppForm } = createFormHook({
   fieldContext,
@@ -93,7 +99,12 @@ function Edit({
   closeDialog: () => void;
 }) {
   const form = useAppForm({
-    defaultValues: zoneMapping,
+    defaultValues: {
+      ...zoneMapping,
+      ...(zoneMapping?.smdaUuid === tempUnmappable.uuid && {
+        smdaUuid: specialOptions.unmappableZone.value,
+      }),
+    } as ZoneMapping,
     onSubmit: ({ formApi, value }) => {
       if (!projectReadOnly) {
         mutationCallback({
@@ -104,6 +115,26 @@ function Edit({
       }
     },
   });
+
+  useEffect(() => {
+    handleErrorUnknownInitialValue(
+      form.setFieldMeta,
+      "smdaUuid",
+      smdaNameOptions,
+      {
+        value:
+          (zoneMapping?.smdaUuid ?? "") === ""
+            ? specialOptions.empty.value
+            : (zoneMapping?.smdaUuid ?? ""),
+        label: zoneMapping?.smdaName ?? "",
+      },
+    );
+  }, [
+    form.setFieldMeta,
+    zoneMapping?.smdaName,
+    zoneMapping?.smdaUuid,
+    smdaNameOptions,
+  ]);
 
   const formSubmitCallback = ({
     message,
@@ -150,15 +181,17 @@ function Edit({
           <Dialog.Header>Edit zone: {zoneMapping.rmsName}</Dialog.Header>
 
           <Dialog.CustomContent>
-            <form.AppField name="smdaUuid">
+            <form.AppField
+              name="smdaUuid"
+              validators={{
+                onChange: ({ value }) => validateSelectValue(value),
+              }}
+            >
               {(field) => (
                 <field.Select
                   label="SMDA name"
                   value={field.state.value}
-                  options={[
-                    { value: "", label: emptyName },
-                    ...smdaNameOptions,
-                  ]}
+                  options={smdaNameOptions}
                   onChange={(value) => {
                     field.handleChange(value);
                   }}
@@ -174,7 +207,11 @@ function Edit({
                   <CommonInputWrapper label="Aliases for RMS name">
                     <ArrayTextFieldContainer>
                       {field.state.value.map((val, idx) => (
-                        <form.AppField key={val} name={`aliases[${idx}]`}>
+                        <form.AppField
+                          // eslint-disable-next-line react-x/no-array-index-key
+                          key={`${idx}-${val}`}
+                          name={`aliases[${idx}]`}
+                        >
                           {() => (
                             <field.ArrayTextField
                               removeValue={() => {
@@ -302,13 +339,25 @@ function Zones({
         rmsName: rmsZone.name,
         ...(key in lookup
           ? {
-              smdaName: lookup[key].official_name,
-              smdaUuid: lookup[key].target_uuid ?? "",
+              unmappable: lookup[key].target_uuid === tempUnmappable.uuid,
+              smdaName:
+                lookup[key].target_uuid === tempUnmappable.uuid
+                  ? specialOptions.unmappableZone.label
+                  : lookup[key].official_name,
+              smdaUuid:
+                lookup[key].target_uuid === tempUnmappable.uuid
+                  ? specialOptions.unmappableZone.value
+                  : (lookup[key].target_uuid ?? ""),
               aliases: lookup[key].mappings
                 .filter((mapping) => mapping.relation_type === "alias")
                 .map((alias) => alias.source_id),
             }
-          : { smdaName: "", smdaUuid: "", aliases: [] }),
+          : {
+              unmappable: false,
+              smdaName: "",
+              smdaUuid: "",
+              aliases: [],
+            }),
       };
     });
     setZoneMappings(zoneMappings);
@@ -316,9 +365,12 @@ function Zones({
 
   useEffect(() => {
     if (stratigraphicUnits !== undefined) {
-      setSmdaNameOptions(
-        createSmdaNameOptions(stratigraphicUnits.stratigraphic_units),
-      );
+      setSmdaNameOptions([
+        specialOptions.empty,
+        specialOptions.unmappableZone,
+        specialOptions.divider,
+        ...createSmdaNameOptions(stratigraphicUnits.stratigraphic_units),
+      ]);
     }
   }, [stratigraphicUnits]);
 
@@ -388,6 +440,7 @@ function Zones({
 
         const hasSmdaName =
           zone.name in zoneMappings && zoneMappings[zone.name].smdaName !== "";
+        const isUnmappable = hasSmdaName && zoneMappings[zone.name].unmappable;
         const aliasCount =
           zone.name in zoneMappings
             ? zoneMappings[zone.name].aliases.length
@@ -416,8 +469,15 @@ function Zones({
               <ZoneSystem>
                 <ZoneInfo>
                   <ZoneSystemName>SMDA</ZoneSystemName>
-                  <ZoneName $targetSystem={true} $missingvalue={!hasSmdaName}>
-                    {hasSmdaName ? zoneMappings[zone.name].smdaName : emptyName}
+                  <ZoneName
+                    $targetSystem={true}
+                    $missingvalue={!hasSmdaName || isUnmappable}
+                  >
+                    {hasSmdaName
+                      ? isUnmappable
+                        ? "No zone"
+                        : zoneMappings[zone.name].smdaName
+                      : emptyName}
                   </ZoneName>
                 </ZoneInfo>
               </ZoneSystem>

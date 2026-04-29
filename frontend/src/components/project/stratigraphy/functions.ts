@@ -1,3 +1,5 @@
+import type { AnyFieldMetaBase, Updater } from "@tanstack/react-form";
+
 import type {
   DataSystem,
   MappingGroupResponse,
@@ -6,7 +8,9 @@ import type {
   StratigraphyIdentifierMapping,
 } from "#client";
 import type { OptionProps } from "#components/form/field";
+import { findOptionValueInOptionsArray } from "#utils/form";
 import type { StratUnitRelation, ZoneMapping, ZoneMappings } from "./types";
+import { specialOptions, tempUnmappable } from "./utils";
 
 export function createSmdaMappingsLookup(mappings: MappingGroupResponse[]) {
   const lookup: Record<string, MappingGroupResponse> = {};
@@ -21,6 +25,25 @@ export function createSmdaMappingsLookup(mappings: MappingGroupResponse[]) {
   });
 
   return lookup;
+}
+
+export function handleErrorUnknownInitialValue(
+  setFieldMeta: (
+    field: keyof ZoneMapping,
+    updater: Updater<AnyFieldMetaBase>,
+  ) => void,
+  field: keyof ZoneMapping,
+  array: OptionProps[],
+  initialValue: OptionProps,
+): void {
+  setFieldMeta(field, (meta) => ({
+    ...meta,
+    errorMap: {
+      onChange: findOptionValueInOptionsArray(array, initialValue.value)
+        ? undefined
+        : `Initial value "${initialValue.value}" does not exist in selection list`,
+    },
+  }));
 }
 
 function getLabelForSmdaName(name: string, level: number) {
@@ -77,10 +100,30 @@ export function updateZoneMappings(
   value: ZoneMapping,
   stratUnit?: StratigraphicUnit,
 ) {
-  return {
-    ...zoneMappings,
-    [value.rmsName]: { ...value, smdaName: stratUnit?.identifier ?? "" },
-  } as ZoneMappings;
+  if (value.smdaUuid === specialOptions.empty.value) {
+    const { [value.rmsName]: _, ...updated } = zoneMappings;
+
+    return updated as ZoneMappings;
+  } else if (value.smdaUuid === specialOptions.unmappableZone.value) {
+    return {
+      ...zoneMappings,
+      [value.rmsName]: {
+        ...value,
+        unmappable: true,
+      },
+    };
+  } else if (value.smdaUuid === specialOptions.divider.value) {
+    return { ...zoneMappings };
+  } else {
+    return {
+      ...zoneMappings,
+      [value.rmsName]: {
+        ...value,
+        unmappable: false,
+        smdaName: stratUnit?.identifier ?? "",
+      },
+    };
+  }
 }
 
 export function createMutationValue(
@@ -92,15 +135,17 @@ export function createMutationValue(
   const result: StratigraphyIdentifierMapping[] = [];
 
   Object.values(zoneMappings).forEach((mapping) => {
-    if (mapping.smdaUuid !== "") {
+    if (mapping.smdaUuid !== "" || mapping.unmappable) {
       result.push({
         mapping_type: mappingType,
         source_system: sourceSystem,
         target_system: targetSystem,
         relation_type: "primary",
         source_id: mapping.rmsName,
-        target_id: mapping.smdaName,
-        target_uuid: mapping.smdaUuid,
+        target_id: mapping.unmappable ? tempUnmappable.id : mapping.smdaName,
+        target_uuid: mapping.unmappable
+          ? tempUnmappable.uuid
+          : mapping.smdaUuid,
       } as StratigraphyIdentifierMapping);
 
       mapping.aliases.forEach((alias) => {
