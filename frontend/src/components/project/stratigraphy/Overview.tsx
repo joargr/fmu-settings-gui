@@ -202,35 +202,33 @@ function Edit({
             <PageSectionSpacer />
 
             <form.AppField name="aliases" mode="array">
-              {(field) => {
-                return (
-                  <CommonInputWrapper label="Aliases for RMS name">
-                    <ArrayTextFieldContainer>
-                      {field.state.value.map((val, idx) => (
-                        <form.AppField
-                          // eslint-disable-next-line react-x/no-array-index-key
-                          key={`${idx}-${val}`}
-                          name={`aliases[${idx}]`}
-                        >
-                          {() => (
-                            <field.ArrayTextField
-                              removeValue={() => {
-                                field.removeValue(idx);
-                              }}
-                            />
-                          )}
-                        </form.AppField>
-                      ))}
-                      <field.ArrayTextAddItem
-                        emptyText="No aliases defined"
-                        pushEmpty={() => {
-                          field.pushValue("");
-                        }}
-                      />
-                    </ArrayTextFieldContainer>
-                  </CommonInputWrapper>
-                );
-              }}
+              {(field) => (
+                <CommonInputWrapper label="Aliases for RMS name">
+                  <ArrayTextFieldContainer>
+                    {field.state.value.map((val, idx) => (
+                      <form.AppField
+                        // eslint-disable-next-line react-x/no-array-index-key
+                        key={`${idx}-${val}`}
+                        name={`aliases[${idx}]`}
+                      >
+                        {() => (
+                          <field.ArrayTextField
+                            removeValue={() => {
+                              field.removeValue(idx);
+                            }}
+                          />
+                        )}
+                      </form.AppField>
+                    ))}
+                    <field.ArrayTextAddItem
+                      emptyText="No aliases defined"
+                      pushEmpty={() => {
+                        field.pushValue("");
+                      }}
+                    />
+                  </ArrayTextFieldContainer>
+                </CommonInputWrapper>
+              )}
             </form.AppField>
           </Dialog.CustomContent>
 
