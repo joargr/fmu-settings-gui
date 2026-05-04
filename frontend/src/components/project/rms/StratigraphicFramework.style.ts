@@ -3,6 +3,32 @@ import styled from "styled-components";
 
 import type { ZonePlacementInfo } from "../stratigraphicFramework/types";
 
+export const HorizonItem = styled.div<{ $rowStart: number }>`
+  grid-row: ${({ $rowStart }) => `${$rowStart} / span 2`};
+  grid-column: 1;
+  align-self: self-start;
+  padding-top: 2px;
+
+  button {
+    height: 100%;  
+    width: 100%;
+    padding: ${tokens.spacings.comfortable.x_small};
+    background-color: ${tokens.colors.ui.background__default.hex};
+
+    span {
+      justify-content: flex-start;
+    }
+
+    &:disabled:not(.orphan) {    
+      background-color: ${tokens.colors.ui.background__default.hex};
+      color: ${tokens.colors.text.static_icons__default.hex};
+    }
+    &.unselected:not(:hover) {
+      color: ${tokens.colors.interactive.disabled__text.hex};
+    }
+  }
+`;
+
 export const ZoneItem = styled.div.attrs<{ $zoneGrid: ZonePlacementInfo }>(
   ({ $zoneGrid }) => ({
     style: {

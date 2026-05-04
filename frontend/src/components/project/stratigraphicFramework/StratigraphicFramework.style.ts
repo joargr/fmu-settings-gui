@@ -51,34 +51,11 @@ export const StratigraphicFrameworkContent = styled(GenericInnerBox).attrs<{
 `;
 
 export const GridLine = styled.div<{
+  $rowStart: number;
   $lineStyle?: "solid" | "dashed";
 }>`
+  grid-row: ${({ $rowStart }) => $rowStart};
   grid-column: 1 / -1;
   border-bottom: 1px ${tokens.colors.ui.background__overlay.hex};
   border-bottom-style: ${({ $lineStyle }) => $lineStyle};
-`;
-
-export const HorizonItem = styled.div`
-  grid-column: 1;
-  align-self: self-start;
-  padding-top: 2px;
-
-  button {
-    height: 100%;  
-    width: 100%;
-    padding: ${tokens.spacings.comfortable.x_small};
-    background-color: ${tokens.colors.ui.background__default.hex};
-
-    span {
-      justify-content: flex-start;
-    }
-
-    &:disabled:not(.orphan) {    
-      background-color: ${tokens.colors.ui.background__default.hex};
-      color: ${tokens.colors.text.static_icons__default.hex};
-    }
-    &.unselected:not(:hover) {
-      color: ${tokens.colors.interactive.disabled__text.hex};
-    }
-  }
 `;
