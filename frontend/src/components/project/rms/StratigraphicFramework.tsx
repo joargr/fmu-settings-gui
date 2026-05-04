@@ -1,9 +1,7 @@
 import { Button, Tooltip } from "@equinor/eds-core-react";
-import { Fragment } from "react/jsx-runtime";
 
 import type { RmsHorizon, RmsStratigraphicZone } from "#client";
 import { useFrameworkData } from "../stratigraphicFramework/functions.ts";
-import { GridLine } from "../stratigraphicFramework/StratigraphicFramework.style.ts";
 import { HorizonItem, ZoneItem } from "./StratigraphicFramework.style";
 
 function HorizonTooltipContent(
@@ -43,8 +41,7 @@ function ZoneTooltipContent(zone: RmsStratigraphicZone, isOrphan: boolean) {
 export function Horizons() {
   const frameworkData = useFrameworkData();
 
-  return frameworkData.horizons.map((horizon, index) => {
-    const rowStart = index * 2 + 1;
+  return frameworkData.horizons.map((horizon, idx) => {
     const isOrphan = frameworkData.orphanHorizonNamesSet.has(horizon.name);
     const isUsedByZone = frameworkData.horizonsUsedByZones.has(horizon.name);
     const isUnselected = frameworkData.unselectedHorizonNamesSet.has(
@@ -52,32 +49,21 @@ export function Horizons() {
     );
 
     return (
-      <Fragment key={horizon.name}>
-        <HorizonItem $rowStart={rowStart}>
-          <Tooltip
-            title={HorizonTooltipContent(horizon, isOrphan, isUsedByZone)}
+      <HorizonItem key={horizon.name} $rowStart={idx * 2 + 1}>
+        <Tooltip title={HorizonTooltipContent(horizon, isOrphan, isUsedByZone)}>
+          <Button
+            className={isOrphan ? "orphan" : isUnselected ? "unselected" : ""}
+            onClick={() =>
+              frameworkData.onHorizonClick?.(horizon, isUnselected)
+            }
+            variant="ghost"
+            color={isOrphan ? "danger" : "primary"}
+            disabled={isUsedByZone && !isOrphan}
           >
-            <Button
-              className={isOrphan ? "orphan" : isUnselected ? "unselected" : ""}
-              onClick={() =>
-                frameworkData.onHorizonClick?.(horizon, isUnselected)
-              }
-              variant="ghost"
-              color={isOrphan ? "danger" : "primary"}
-              disabled={isUsedByZone && !isOrphan}
-            >
-              {horizon.name}
-            </Button>
-          </Tooltip>
-        </HorizonItem>
-
-        <GridLine
-          $rowStart={rowStart}
-          $lineStyle={
-            horizon.type.startsWith("interpreted") ? "solid" : "dashed"
-          }
-        />
-      </Fragment>
+            {horizon.name}
+          </Button>
+        </Tooltip>
+      </HorizonItem>
     );
   });
 }

@@ -5,6 +5,7 @@ import type { RmsHorizon, RmsStratigraphicZone } from "#client";
 import { FrameworkDataContext } from "./FrameworkData";
 import { getZoneGridPlacement } from "./functions";
 import {
+  GridLine,
   StratigraphicFrameworkContainer,
   StratigraphicFrameworkContent,
   StratigraphicFrameworkHeader,
@@ -88,6 +89,16 @@ export function StratigraphicFramework({
         $numRows={frameworkData.numGridRows}
       >
         <FrameworkDataContext value={frameworkData}>
+          {horizons.map((horizon, idx) => (
+            <GridLine
+              key={horizon.name}
+              $rowStart={idx * 2 + 1}
+              $lineStyle={
+                horizon.type.startsWith("interpreted") ? "solid" : "dashed"
+              }
+            />
+          ))}
+
           {horizonsComponent}
 
           {zonesComponent}
