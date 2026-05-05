@@ -55,7 +55,7 @@ export const GridLine = styled.div<{
   $lineStyle?: "solid" | "dashed";
 }>`
   grid-row: ${({ $rowStart }) => $rowStart};
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
   border-bottom: 1px ${tokens.colors.ui.background__overlay.hex};
   border-bottom-style: ${({ $lineStyle }) => $lineStyle};
 `;

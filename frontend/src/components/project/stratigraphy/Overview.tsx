@@ -54,13 +54,15 @@ import {
   updateZoneMappings,
 } from "./functions";
 import {
-  ZoneActions,
-  ZoneInfo,
+  ElementActions,
+  ElementInfo,
+  ElementName,
+  ElementSystem,
+  ElementSystemName,
+  ElementSystems,
+  HorizonItem,
+  HorizonSystemName,
   ZoneItem,
-  ZoneName,
-  ZoneSystem,
-  ZoneSystemName,
-  ZoneSystems,
 } from "./Overview.style";
 import type { ZoneMapping, ZoneMappings } from "./types";
 import {
@@ -267,6 +269,57 @@ function Edit({
   );
 }
 
+function Horizons() {
+  const frameworkData = useFrameworkData();
+  const aliasCount = frameworkData.horizons.length;
+
+  return frameworkData.horizons.map((horizon, idx) => {
+    return (
+      <HorizonItem key={horizon.name} $rowStart={idx * 2 + 1}>
+        <ElementSystems>
+          <ElementSystem>
+            <ElementInfo>
+              <HorizonSystemName>RMS</HorizonSystemName>
+              <ElementName>
+                {horizon.name}
+                {aliasCount > 0 && (
+                  <Icon
+                    className="aliases"
+                    data={link}
+                    // title={`${aliasCount === 1 ? "Alias" : "Aliases"}: ${zoneMappings[zone.name].aliases.join(", ")}`}
+                    title={`${aliasCount === 1 ? "Alias" : "Aliases"}: ${["Alias1", "Alias2"].join(", ")}`}
+                    size={16}
+                  />
+                )}
+              </ElementName>
+            </ElementInfo>
+          </ElementSystem>
+
+          <ElementSystem>
+            <ElementInfo>
+              <HorizonSystemName>SMDA</HorizonSystemName>
+              <ElementName $targetSystem={true} $missingvalue={false}>
+                {horizon.name}
+              </ElementName>
+            </ElementInfo>
+          </ElementSystem>
+        </ElementSystems>
+
+        <ElementActions>
+          <Icon
+            data={edit}
+            title="Edit"
+            size={16}
+            // onClick={() => {
+            //   editClick(zoneMappings[zone.name]);
+            // }}
+          />
+        </ElementActions>
+      </HorizonItem>
+    );
+  });
+}
+
 function Zones({
   mappings,
   stratigraphicColumn,
@@ -446,11 +499,11 @@ function Zones({
 
         return (
           <ZoneItem key={zone.name} $zoneGrid={grid}>
-            <ZoneSystems>
-              <ZoneSystem>
-                <ZoneInfo>
-                  <ZoneSystemName>RMS</ZoneSystemName>
-                  <ZoneName>
+            <ElementSystems>
+              <ElementSystem>
+                <ElementInfo>
+                  <ElementSystemName>RMS</ElementSystemName>
+                  <ElementName>
                     {zone.name}
                     {aliasCount > 0 && (
                       <Icon
@@ -460,14 +513,14 @@ function Zones({
                         size={16}
                       />
                     )}
-                  </ZoneName>
-                </ZoneInfo>
-              </ZoneSystem>
+                  </ElementName>
+                </ElementInfo>
+              </ElementSystem>
 
-              <ZoneSystem>
-                <ZoneInfo>
-                  <ZoneSystemName>SMDA</ZoneSystemName>
-                  <ZoneName
+              <ElementSystem>
+                <ElementInfo>
+                  <ElementSystemName>SMDA</ElementSystemName>
+                  <ElementName
                     $targetSystem={true}
                     $missingvalue={!hasSmdaName || isUnmappable}
                   >
@@ -476,13 +529,13 @@ function Zones({
                         ? "No zone"
                         : zoneMappings[zone.name].smdaName
                       : emptyName}
-                  </ZoneName>
-                </ZoneInfo>
-              </ZoneSystem>
-            </ZoneSystems>
+                  </ElementName>
+                </ElementInfo>
+              </ElementSystem>
+            </ElementSystems>
 
             {canEdit && (
-              <ZoneActions>
+              <ElementActions>
                 <Icon
                   data={edit}
                   title="Edit"
@@ -491,7 +544,7 @@ function Zones({
                     editClick(zoneMappings[zone.name]);
                   }}
                 />
-              </ZoneActions>
+              </ElementActions>
             )}
           </ZoneItem>
         );
@@ -531,6 +584,7 @@ export function Overview({
             horizons={rmsProject.horizons}
             zones={rmsProject.zones}
           >
+            <Horizons />
             <Zones
               mappings={mappings}
               stratigraphicColumn={stratigraphicColumn}
