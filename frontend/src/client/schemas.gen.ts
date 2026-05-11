@@ -230,7 +230,7 @@ known to SMDA.`
 
 export const DataSystemSchema = {
     type: 'string',
-    enum: ['rms', 'smda', 'fmu'],
+    enum: ['rms', 'smda', 'simulator', 'pdm'],
     title: 'DataSystem',
     description: 'The system or application data is being mapping to or from.'
 } as const;
@@ -349,6 +349,198 @@ export const HTTPValidationErrorSchema = {
     title: 'HTTPValidationError'
 } as const;
 
+export const InternalMappingsSchema = {
+    properties: {
+        stratigraphy: {
+            '$ref': '#/components/schemas/InternalStratigraphyMappings-Output'
+        },
+        wellbore: {
+            '$ref': '#/components/schemas/InternalWellboreMappings'
+        }
+    },
+    type: 'object',
+    title: 'InternalMappings',
+    description: 'Represents the .fmu/mappings.json storage schema.'
+} as const;
+
+export const InternalRelationTypeSchema = {
+    type: 'string',
+    enum: ['primary', 'alias', 'unmappable'],
+    title: 'InternalRelationType',
+    description: 'The kind of relation this internal .fmu mapping represents.'
+} as const;
+
+export const InternalStratigraphyIdentifierMappingSchema = {
+    properties: {
+        source_system: {
+            '$ref': '#/components/schemas/DataSystem'
+        },
+        target_system: {
+            '$ref': '#/components/schemas/DataSystem'
+        },
+        mapping_type: {
+            type: 'string',
+            const: 'stratigraphy',
+            title: 'Mapping Type',
+            default: 'stratigraphy'
+        },
+        relation_type: {
+            '$ref': '#/components/schemas/InternalRelationType'
+        },
+        source_id: {
+            type: 'string',
+            title: 'Source Id'
+        },
+        source_uuid: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source Uuid'
+        },
+        target_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Id'
+        },
+        target_uuid: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Uuid'
+        }
+    },
+    type: 'object',
+    required: ['source_system', 'target_system', 'relation_type', 'source_id'],
+    title: 'InternalStratigraphyIdentifierMapping',
+    description: `Stratigraphy identifier mapping stored in .fmu/mappings.json.
+
+Use \`\`to_stratigraphy_mappings()\`\` on the collection model when consumers
+need the fmu-datamodels mapping schema.`
+} as const;
+
+export const InternalStratigraphyMappings_InputSchema = {
+    items: {
+        '$ref': '#/components/schemas/InternalStratigraphyIdentifierMapping'
+    },
+    type: 'array',
+    title: 'InternalStratigraphyMappings',
+    description: `Collection of stratigraphy mappings stored in .fmu/mappings.json.
+
+This internal model can keep same-system alias information and unmappable
+relation. Converting to fmu-datamodels drops unmappable entries and expands
+same-system aliases onto matching cross-system primary mappings.`
+} as const;
+
+export const InternalStratigraphyMappings_OutputSchema = {
+    items: {
+        '$ref': '#/components/schemas/InternalStratigraphyIdentifierMapping'
+    },
+    type: 'array',
+    title: 'InternalStratigraphyMappings',
+    description: `Collection of stratigraphy mappings stored in .fmu/mappings.json.
+
+This internal model can keep same-system alias information and unmappable
+relation. Converting to fmu-datamodels drops unmappable entries and expands
+same-system aliases onto matching cross-system primary mappings.`
+} as const;
+
+export const InternalWellboreIdentifierMappingSchema = {
+    properties: {
+        source_system: {
+            '$ref': '#/components/schemas/DataSystem'
+        },
+        target_system: {
+            '$ref': '#/components/schemas/DataSystem'
+        },
+        mapping_type: {
+            type: 'string',
+            const: 'wellbore',
+            title: 'Mapping Type',
+            default: 'wellbore'
+        },
+        relation_type: {
+            '$ref': '#/components/schemas/InternalRelationType'
+        },
+        source_id: {
+            type: 'string',
+            title: 'Source Id'
+        },
+        source_uuid: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source Uuid'
+        },
+        target_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Id'
+        },
+        target_uuid: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Uuid'
+        }
+    },
+    type: 'object',
+    required: ['source_system', 'target_system', 'relation_type', 'source_id'],
+    title: 'InternalWellboreIdentifierMapping',
+    description: `Wellbore identifier mapping stored in .fmu/mappings.json.
+
+Use \`\`to_wellbore_mappings()\`\` on the collection model when consumers need
+the fmu-datamodels mapping schema.`
+} as const;
+
+export const InternalWellboreMappingsSchema = {
+    items: {
+        '$ref': '#/components/schemas/InternalWellboreIdentifierMapping'
+    },
+    type: 'array',
+    title: 'InternalWellboreMappings',
+    description: `Collection of wellbore mappings stored in .fmu/mappings.json.
+
+This internal model can keep same-system alias information and unmappable
+relation. Converting to fmu-datamodels drops unmappable entries and expands
+same-system aliases onto matching cross-system primary mappings.`
+} as const;
+
 export const ListFieldDiffSchema = {
     properties: {
         field_path: {
@@ -433,7 +625,7 @@ export const LockInfoSchema = {
             type: 'string',
             pattern: '(\\d+(\\.\\d+){0,2}|\\d+\\.\\d+\\.[a-z0-9]+\\+[a-z0-9.]+)',
             title: 'Version',
-            default: '0.22.0'
+            default: '0.30.1.dev1+ged3db8e84'
         }
     },
     type: 'object',
@@ -540,14 +732,9 @@ export const Log_ChangeInfo_Schema = {
     title: 'Log[ChangeInfo]'
 } as const;
 
-export const MappingGroupSchema = {
-    additionalProperties: true,
-    type: 'object'
-} as const;
-
 export const MappingTypeSchema = {
     type: 'string',
-    enum: ['stratigraphy'],
+    enum: ['stratigraphy', 'wellbore'],
     title: 'MappingType',
     description: `The discriminator used between mapping types.
 
@@ -728,11 +915,22 @@ export const ProjectConfigSchema = {
 Stored as config.json.`
 } as const;
 
-export const RelationTypeSchema = {
-    type: 'string',
-    enum: ['primary', 'alias', 'equivalent'],
-    title: 'RelationType',
-    description: 'The kind of relation this mapping represents.'
+export const RestorableFilesResponseSchema = {
+    properties: {
+        files: {
+            items: {
+                type: 'string',
+                format: 'path'
+            },
+            type: 'array',
+            title: 'Files',
+            description: 'Relative paths to the restorable or restored files.'
+        }
+    },
+    type: 'object',
+    required: ['files'],
+    title: 'RestorableFilesResponse',
+    description: 'A list of missing .fmu files that can be restored or were restored.'
 } as const;
 
 export const RmsCoordinateSystemSchema = {
@@ -1013,12 +1211,17 @@ export const RmsWellSchema = {
         name: {
             type: 'string',
             title: 'Name'
+        },
+        planned: {
+            type: 'boolean',
+            title: 'Planned',
+            default: false
         }
     },
     type: 'object',
     required: ['name'],
     title: 'RmsWell',
-    description: 'A well from an RMS project.'
+    description: 'A well from an RMS project with added metadata.'
 } as const;
 
 export const ScalarFieldDiffSchema = {
@@ -1059,6 +1262,19 @@ export const SessionResponseSchema = {
             title: 'Expires At',
             description: 'Timestamp when the session will expire.'
         },
+        rms_expires_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rms Expires At',
+            description: 'Timestamp when the RMS session will expire.'
+        },
         last_accessed: {
             type: 'string',
             format: 'date-time',
@@ -1067,7 +1283,7 @@ export const SessionResponseSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'created_at', 'expires_at', 'last_accessed'],
+    required: ['id', 'created_at', 'expires_at', 'rms_expires_at', 'last_accessed'],
     title: 'SessionResponse',
     description: 'Serializable representation of the current session.'
 } as const;
@@ -1082,6 +1298,7 @@ export const SmdaSchema = {
                 '$ref': '#/components/schemas/CountryItem'
             },
             type: 'array',
+            minItems: 1,
             title: 'Country'
         },
         discovery: {
@@ -1096,6 +1313,7 @@ export const SmdaSchema = {
                 '$ref': '#/components/schemas/FieldItem'
             },
             type: 'array',
+            minItems: 1,
             title: 'Field'
         },
         stratigraphic_column: {
@@ -1163,10 +1381,15 @@ export const SmdaFieldUUIDSchema = {
             format: 'uuid',
             title: 'Uuid',
             description: 'The SMDA UUID identifier corresponding to the field identifier.'
+        },
+        country: {
+            type: 'string',
+            title: 'Country',
+            description: 'The country identifier corresponding to the field identifier.'
         }
     },
     type: 'object',
-    required: ['identifier', 'uuid'],
+    required: ['identifier', 'uuid', 'country'],
     title: 'SmdaFieldUUID',
     description: 'Name-UUID identifier for a field as known by SMDA.'
 } as const;
@@ -1227,6 +1450,34 @@ applies to the model they are working on.`
     required: ['field', 'country', 'discovery', 'stratigraphic_columns', 'field_coordinate_system', 'coordinate_systems'],
     title: 'SmdaMasterdataResult',
     description: 'Contains SMDA-related attributes.'
+} as const;
+
+export const SmdaSelectedFieldSchema = {
+    properties: {
+        identifier: {
+            type: 'string',
+            title: 'Identifier',
+            description: 'A field identifier (name).',
+            examples: ['TROLL']
+        },
+        uuid: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Uuid',
+            description: 'The SMDA UUID identifier corresponding to the field identifier.'
+        }
+    },
+    type: 'object',
+    required: ['identifier'],
+    title: 'SmdaSelectedField',
+    description: 'A selected field for masterdata lookup.'
 } as const;
 
 export const SmdaStratColumnSchema = {
@@ -1315,11 +1566,37 @@ export const StratigraphicUnitSchema = {
             description: 'The identifier (name) of the stratigraphic unit top pick (horizon).',
             examples: ['VIKING GP. Top']
         },
+        top_uuid: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Top Uuid',
+            description: 'The SMDA UUID identifier corresponding to the top horizon.'
+        },
         base: {
             type: 'string',
             title: 'Base',
             description: 'The identifier (name) of the stratigraphic unit base pick (horizon).',
             examples: ['VIKING GP. Base']
+        },
+        base_uuid: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Base Uuid',
+            description: 'The SMDA UUID identifier corresponding to the base horizon.'
         },
         top_age: {
             type: 'number',
@@ -1402,68 +1679,9 @@ export const StratigraphicUnitSchema = {
         }
     },
     type: 'object',
-    required: ['identifier', 'uuid', 'strat_unit_type', 'strat_unit_level', 'top', 'base', 'top_age', 'base_age', 'strat_unit_parent', 'strat_column_type', 'color_r', 'color_g', 'color_b'],
+    required: ['identifier', 'uuid', 'strat_unit_type', 'strat_unit_level', 'top', 'top_uuid', 'base', 'base_uuid', 'top_age', 'base_age', 'strat_unit_parent', 'strat_column_type', 'color_r', 'color_g', 'color_b'],
     title: 'StratigraphicUnit',
     description: 'Stratigraphic unit item.'
-} as const;
-
-export const StratigraphyIdentifierMappingSchema = {
-    properties: {
-        source_system: {
-            '$ref': '#/components/schemas/DataSystem'
-        },
-        target_system: {
-            '$ref': '#/components/schemas/DataSystem'
-        },
-        mapping_type: {
-            type: 'string',
-            const: 'stratigraphy',
-            title: 'Mapping Type',
-            default: 'stratigraphy'
-        },
-        relation_type: {
-            '$ref': '#/components/schemas/RelationType'
-        },
-        source_id: {
-            type: 'string',
-            title: 'Source Id'
-        },
-        source_uuid: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'uuid'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Source Uuid'
-        },
-        target_id: {
-            type: 'string',
-            title: 'Target Id'
-        },
-        target_uuid: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'uuid'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Target Uuid'
-        }
-    },
-    type: 'object',
-    required: ['source_system', 'target_system', 'relation_type', 'source_id', 'target_id'],
-    title: 'StratigraphyIdentifierMapping',
-    description: `Represents a stratigraphy mapping.
-
-This is a mapping from stratigraphic identifiers (tops, zones, etc.) to official
-identifiers in SMDA.`
 } as const;
 
 export const SumoAssetSchema = {
@@ -1583,13 +1801,6 @@ export const ValidationErrorSchema = {
         type: {
             type: 'string',
             title: 'Error Type'
-        },
-        input: {
-            title: 'Input'
-        },
-        ctx: {
-            type: 'object',
-            title: 'Context'
         }
     },
     type: 'object',
