@@ -17,6 +17,7 @@ import type {
   StratigraphicColumn,
 } from "#client";
 import {
+  projectGetChangelogQueryKey,
   projectGetMappingsOptions,
   projectGetMappingsQueryKey,
   projectPutMappingsMutation,
@@ -430,6 +431,9 @@ function Elements({
         queryKey: projectGetMappingsQueryKey({
           path: mappingsPaths.stratigraphyRms,
         }),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: projectGetChangelogQueryKey(),
       });
     },
     onError: (error) => {
