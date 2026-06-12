@@ -75,6 +75,7 @@ declare module "@tanstack/react-router" {
 interface QueryAndMutationMeta extends Record<string, unknown> {
   errorPrefix?: string;
   preventDefaultErrorHandling?: Array<number>;
+  resetQueryOnError?: Array<number>;
 }
 
 declare module "@tanstack/react-query" {
@@ -92,12 +93,25 @@ const queryClient = new QueryClient({
       const {
         errorPrefix = "Error getting data",
         preventDefaultErrorHandling = [],
+        resetQueryOnError = [],
       } = query.meta ?? {};
 
+      const responseStatus =
+        isAxiosError(error) && error.response
+          ? error.response.status
+          : undefined;
+
+      if (
+        responseStatus &&
+        resetQueryOnError.includes(responseStatus) &&
+        query.state.data !== undefined
+      ) {
+        query.reset();
+      }
+
       const preventDefault =
-        isAxiosError(error) &&
-        error.response?.status &&
-        preventDefaultErrorHandling.includes(error.response.status);
+        responseStatus !== undefined &&
+        preventDefaultErrorHandling.includes(responseStatus);
 
       if (!preventDefault) {
         defaultErrorHandling(error, errorPrefix);
