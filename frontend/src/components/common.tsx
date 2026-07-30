@@ -1,5 +1,5 @@
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
-import { Dialog } from "@equinor/eds-core-react";
+import { Dialog, List } from "@equinor/eds-core-react";
 import {
   QueryErrorResetBoundary,
   useSuspenseQuery,
@@ -18,6 +18,8 @@ import { GeneralButton } from "#components/form/button";
 import type { HealthCheck } from "#services/smda";
 import {
   GenericDialog,
+  OrphanWarningContainer,
+  OrphanWarningList,
   PageCode,
   PageHeader,
   PageText,
@@ -37,6 +39,36 @@ type ErrorFallbackProps = {
 
 export function Loading() {
   return <PageText>Loading...</PageText>;
+}
+
+const ORPHAN_LIST_PREVIEW_LIMIT = 20;
+
+export function OrphanWarningBox({
+  message,
+  listItems,
+}: {
+  message: string;
+  listItems: string[];
+}) {
+  const visibleListItems = listItems.slice(0, ORPHAN_LIST_PREVIEW_LIMIT);
+  const hiddenItemCount = listItems.length - visibleListItems.length;
+
+  return (
+    <OrphanWarningContainer>
+      <PageText>{message}</PageText>
+
+      <OrphanWarningList>
+        {visibleListItems.map((item) => (
+          <List.Item key={item}>{item}</List.Item>
+        ))}
+        {hiddenItemCount > 0 && (
+          <List.Item key="remaining-items">
+            and {hiddenItemCount} more
+          </List.Item>
+        )}
+      </OrphanWarningList>
+    </OrphanWarningContainer>
+  );
 }
 
 function ErrorFallback({

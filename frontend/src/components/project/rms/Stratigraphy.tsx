@@ -1,7 +1,7 @@
-import { Dialog, List } from "@equinor/eds-core-react";
+import { Dialog } from "@equinor/eds-core-react";
 import { type AnyFormApi, createFormHook } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { toast } from "react-toastify";
 
 import type {
@@ -17,7 +17,7 @@ import {
   rmsGetHorizonsOptions,
   rmsGetZonesOptions,
 } from "#client/@tanstack/react-query.gen";
-import { ConfirmCloseDialog } from "#components/common";
+import { ConfirmCloseDialog, OrphanWarningBox } from "#components/common";
 import {
   CancelButton,
   GeneralButton,
@@ -44,10 +44,7 @@ import { fieldContext, formContext, useFormContext } from "#utils/form";
 import { useConfirmClose } from "#utils/ui.ts";
 import { StratigraphicFramework } from "../stratigraphicFramework/StratigraphicFramework.tsx";
 import { Horizons, Zones } from "./StratigraphicFramework";
-import {
-  OrphanTypesContainer,
-  StratigraphyEditorContainer,
-} from "./Stratigraphy.style";
+import { StratigraphyEditorContainer } from "./Stratigraphy.style";
 import { namesNotInReference, useItemHandlers } from "./utils.ts";
 
 type ConfirmAction = "add" | "remove" | "";
@@ -97,33 +94,6 @@ function ConfirmActionDialog({
         <CancelButton onClick={resetConfirmAction} />
       </Dialog.Actions>
     </GenericDialog>
-  );
-}
-
-function OrphanWarningBox({
-  orphanZoneNames,
-  orphanHorizonNames,
-}: {
-  orphanZoneNames: string[];
-  orphanHorizonNames: string[];
-}) {
-  return (
-    <OrphanTypesContainer>
-      <PageText>
-        There are horizons or zones in the project stratigraphy that are no
-        longer available in RMS. They need to be removed before data can be
-        saved.
-      </PageText>
-
-      <List>
-        {orphanHorizonNames.length > 0 && (
-          <List.Item>{orphanHorizonNames.join(", ")}</List.Item>
-        )}
-        {orphanZoneNames.length > 0 && (
-          <List.Item>{orphanZoneNames.join(", ")}</List.Item>
-        )}
-      </List>
-    </OrphanTypesContainer>
   );
 }
 
@@ -185,12 +155,23 @@ function StratigraphyEditor({
   );
   const hasOrphans =
     orphanHorizonNames.length > 0 || orphanZoneNames.length > 0;
-
-  useEffect(() => {
-    form.setErrorMap({
-      onChange: hasOrphans ? ["Orphan horizons or zones present"] : undefined,
-    });
-  }, [form, hasOrphans]);
+  const orphanCount = orphanHorizonNames.length + orphanZoneNames.length;
+  const orphanTypeCounts = [
+    orphanHorizonNames.length > 0
+      ? `${orphanHorizonNames.length} ${
+          orphanHorizonNames.length === 1 ? "horizon" : "horizons"
+        }`
+      : "",
+    orphanZoneNames.length > 0
+      ? `${orphanZoneNames.length} ${
+          orphanZoneNames.length === 1 ? "zone" : "zones"
+        }`
+      : "",
+  ].filter(Boolean);
+  const orphanListItems = [
+    ...orphanHorizonNames.map((name) => `Horizon: ${name}`),
+    ...orphanZoneNames.map((name) => `Zone: ${name}`),
+  ];
 
   return (
     <StratigraphyEditorContainer>
@@ -216,8 +197,12 @@ function StratigraphyEditor({
 
         {hasOrphans && (
           <OrphanWarningBox
-            orphanZoneNames={orphanZoneNames}
-            orphanHorizonNames={orphanHorizonNames}
+            message={`${orphanTypeCounts.join(" and ")} stored in the project ${
+              orphanCount === 1 ? "is" : "are"
+            } currently not available in RMS. ${
+              orphanCount === 1 ? "It" : "They"
+            } will be removed when you save.`}
+            listItems={orphanListItems}
           />
         )}
 
@@ -297,14 +282,17 @@ function Edit({
   closeDialog: () => void;
   isRmsProjectOpen: boolean;
 }) {
-  const { data: availableHorizons } = useQuery({
-    ...rmsGetHorizonsOptions(),
-    enabled: isRmsProjectOpen,
-  });
-  const { data: availableZones } = useQuery({
+  const { data: availableHorizons, isSuccess: availableHorizonsLoaded } =
+    useQuery({
+      ...rmsGetHorizonsOptions(),
+      enabled: isRmsProjectOpen,
+    });
+  const { data: availableZones, isSuccess: availableZonesLoaded } = useQuery({
     ...rmsGetZonesOptions(),
     enabled: isRmsProjectOpen,
   });
+  const availableStratigraphyLoaded =
+    availableHorizonsLoaded && availableZonesLoaded;
 
   const queryClient = useQueryClient();
 
@@ -352,8 +340,24 @@ function Edit({
     formSubmitCallback,
     formReset,
   }: MutationCallbackProps<RmsStratigraphicFramework>) => {
+    const availableHorizonNames = new Set(
+      availableHorizons?.map((horizon) => horizon.name),
+    );
+    const availableZoneNames = new Set(
+      availableZones?.map((zone) => zone.name),
+    );
+
     rmsStratigraphyMutation.mutate(
-      { body: formValue },
+      {
+        body: {
+          horizons: formValue.horizons.filter((horizon) =>
+            availableHorizonNames.has(horizon.name),
+          ),
+          zones: formValue.zones.filter((zone) =>
+            availableZoneNames.has(zone.name),
+          ),
+        },
+      },
       {
         onSuccess: (data) => {
           formSubmitCallback({ message: data.message, formReset });
@@ -419,22 +423,42 @@ function Edit({
 
           <Dialog.Actions>
             <form.Subscribe
-              selector={(state) => [state.isDefaultValue, state.canSubmit]}
+              selector={(state) =>
+                [
+                  state.isDefaultValue,
+                  state.canSubmit,
+                  state.values.horizons,
+                  state.values.zones,
+                ] as const
+              }
             >
-              {([isDefaultValue, canSubmit]) => (
-                <form.SubmitButton
-                  label="Save"
-                  disabled={
-                    projectReadOnly ? true : isDefaultValue ? true : !canSubmit
-                  }
-                  isPending={rmsStratigraphyMutation.isPending}
-                  helperTextDisabled={
-                    projectReadOnly
-                      ? "Project is read-only"
-                      : "Form can be saved when the values have changed"
-                  }
-                />
-              )}
+              {([isDefaultValue, canSubmit, horizons, zones]) => {
+                const hasOrphans =
+                  availableStratigraphyLoaded &&
+                  (namesNotInReference(horizons, availableHorizons).length >
+                    0 ||
+                    namesNotInReference(zones, availableZones).length > 0);
+
+                return (
+                  <form.SubmitButton
+                    label="Save"
+                    disabled={
+                      projectReadOnly ||
+                      (isDefaultValue && !hasOrphans) ||
+                      !canSubmit ||
+                      !availableStratigraphyLoaded
+                    }
+                    isPending={rmsStratigraphyMutation.isPending}
+                    helperTextDisabled={
+                      projectReadOnly
+                        ? "Project is read-only"
+                        : !availableStratigraphyLoaded
+                          ? "RMS stratigraphy must be loaded before saving"
+                          : "Form can be saved when the values have changed"
+                    }
+                  />
+                );
+              }}
             </form.Subscribe>
             <form.CancelButton
               onClick={(e) => {
