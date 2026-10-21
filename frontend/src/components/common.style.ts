@@ -46,12 +46,12 @@ function getColors(
 export const ElementSystem = styled.div<{
   $systemNameShown?: boolean;
 }>`
-	display: inline grid;
+  display: inline grid;
   flex: 1;
   vertical-align: ${(props) => (props.$systemNameShown ? "100%" : undefined)} ;
-	border-radius: ${tokens.shape.corners.borderRadius};
+  border-radius: ${tokens.shape.corners.borderRadius};
 
-	align-items: center;
+  align-items: center;
 `;
 
 export const ElementInfo = styled.div`
