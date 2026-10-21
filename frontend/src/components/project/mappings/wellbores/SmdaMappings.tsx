@@ -1,5 +1,6 @@
 import { Autocomplete, Checkbox, Dialog } from "@equinor/eds-core-react";
 import { type ColumnDef, EdsDataGrid } from "@equinor/eds-data-grid-react";
+import { tokens } from "@equinor/eds-tokens";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -171,11 +172,14 @@ function AutomaticMappingParameters({
           add your own.
         </PageText>
 
-        <PageText>
+        <PageText
+          $hasElementName
+          $marginTop={`-${tokens.spacings.comfortable.medium}`}
+        >
           For example, ignoring RFT and NO lets{" "}
-          <span className="emphasis">RFT_55_33-A-2</span> match{" "}
-          <span className="emphasis">NO 55/33-A-2</span>. Only the comparison is
-          affected. The complete SMDA name is still saved.
+          <ElementName system="rms" name="RFT_55_33-A-2" showSystemName /> match{" "}
+          <ElementName system="smda" name="NO 55/33-A-2" showSystemName />. Only
+          the comparison is affected. The complete SMDA name is still saved.
         </PageText>
 
         <PageText>

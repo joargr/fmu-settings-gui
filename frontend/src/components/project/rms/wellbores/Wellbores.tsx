@@ -335,6 +335,9 @@ function WellboresEditor({
       accessorKey: "name",
       header: "Wellbore",
       size: 200,
+      cell: ({ getValue }) => (
+        <ElementName system="rms" name={getValue<string>()} />
+      ),
     },
     {
       id: "planned",

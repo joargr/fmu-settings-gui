@@ -36,8 +36,19 @@ export const PageHeader = styled(Typography).attrs<{
 
 export const PageText = styled(Typography).attrs<{
   $variant?: string;
+  $marginTop?: string;
   $marginBottom?: string;
-}>(({ $variant = "body_short" }) => ({ variant: $variant }))`
+  $hasElementName?: boolean;
+}>(({ $variant = "body_short", $hasElementName }) => {
+  if ($hasElementName) {
+    return { as: "div" };
+  } else {
+    return {
+      variant: $variant,
+    };
+  }
+})`
+  margin-top: ${({ $marginTop }) => $marginTop ?? undefined};
   margin-bottom: ${({ $marginBottom = tokens.spacings.comfortable.medium }) => $marginBottom};
 
   .emphasis {
