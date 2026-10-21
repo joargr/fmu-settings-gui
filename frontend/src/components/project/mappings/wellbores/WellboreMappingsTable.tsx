@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import type { InternalWellboreIdentifierMapping } from "#client";
-import { ConfirmCloseDialog } from "#components/common";
+import { ConfirmCloseDialog, ElementName } from "#components/common";
 import { CancelButton, SubmitButton } from "#components/form/button";
 import {
   AutocompleteField,
@@ -315,12 +315,26 @@ const wellboreMappingColumns: ColumnDef<ElementMapping>[] = [
     accessorFn: wellboreMappingDisplayValue.rmsWellboreName,
     header: "RMS",
     size: 210,
+    cell: ({ getValue }) => (
+      <ElementName system="rms" name={getValue<string>()} />
+    ),
   },
   {
     id: "simulatorName",
     accessorFn: wellboreMappingDisplayValue.simulatorName,
     header: "Simulator",
     size: 210,
+    cell: ({ row, getValue }) => {
+      const targetData = row.original.targets.simulator;
+
+      return (
+        <ElementName
+          system="simulator"
+          name={getValue<string>()}
+          isNoElement={targetData?.name === "" ? "info" : undefined}
+        />
+      );
+    },
   },
   {
     id: "smdaName",
@@ -347,6 +361,23 @@ const wellboreMappingColumns: ColumnDef<ElementMapping>[] = [
 
       return (
         valueA.rank - valueB.rank || stringCompare(valueA.name, valueB.name)
+      );
+    },
+    cell: ({ row, getValue }) => {
+      const targetData = row.original.targets.smda;
+
+      return (
+        <ElementName
+          system="smda"
+          name={getValue<string>()}
+          isNoElement={
+            targetData?.unmappable
+              ? "warning"
+              : targetData?.name === ""
+                ? "info"
+                : undefined
+          }
+        />
       );
     },
   },

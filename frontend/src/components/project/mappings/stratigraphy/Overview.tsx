@@ -335,7 +335,7 @@ function Element({
           system="rms"
           name={elementMapping.name}
           aliases={elementMapping.aliases}
-          // showSystemName
+          showSystemName
           noSystemNameBorder={elementMapping.elementType === "zone"}
         />
 

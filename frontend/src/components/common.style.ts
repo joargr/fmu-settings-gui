@@ -16,6 +16,10 @@ function getColors(
       backgroundColor = tokens.colors.infographic.primary__mist_blue.hex;
       color = tokens.colors.text.static_icons__default.hex;
       break;
+    case "simulator":
+      backgroundColor = tokens.colors.infographic.primary__spruce_wood.hex;
+      color = tokens.colors.text.static_icons__default.hex;
+      break;
     case "smda":
       backgroundColor = tokens.colors.infographic.substitute__blue_overcast.hex;
       color = tokens.colors.text.static_icons__primary_white.hex;

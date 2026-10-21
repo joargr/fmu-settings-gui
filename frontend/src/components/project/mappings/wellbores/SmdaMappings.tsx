@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { matchPostMatchMutation } from "#client/@tanstack/react-query.gen";
-import { ConfirmCloseDialog } from "#components/common";
+import { ConfirmCloseDialog, ElementName } from "#components/common";
 import { CancelButton, GeneralButton } from "#components/form/button";
 import type { ElementMappings } from "#components/project/common/mapping/types";
 import { applicationLocale } from "#config";
@@ -293,12 +293,21 @@ function AutomaticMappingDialog({
         accessorKey: "rmsWellboreName",
         header: "RMS",
         enableColumnFilter: false,
+        cell: ({ getValue }) => (
+          <ElementName system="rms" name={getValue<string>()} />
+        ),
       },
       {
         accessorKey: "smdaName",
         header: "Suggested SMDA",
         enableColumnFilter: false,
-        cell: ({ row }) => row.original.smdaLabel || emptyName,
+        cell: ({ row }) => (
+          <ElementName
+            system="smda"
+            name={row.original.smdaLabel || emptyName}
+            isNoElement={!row.original.smdaLabel ? "info" : undefined}
+          />
+        ),
       },
       {
         id: "nameSimilarity",

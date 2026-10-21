@@ -17,7 +17,11 @@ import {
   projectPatchRmsWellsMutation,
   rmsGetWellsOptions,
 } from "#client/@tanstack/react-query.gen";
-import { ConfirmCloseDialog, OrphanWarningBox } from "#components/common";
+import {
+  ConfirmCloseDialog,
+  ElementName,
+  OrphanWarningBox,
+} from "#components/common";
 import {
   CancelButton,
   GeneralButton,
@@ -88,6 +92,9 @@ const storedWellboreColumns: ColumnDef<RmsWell>[] = [
     accessorKey: "name",
     header: "Wellbore",
     size: 200,
+    cell: ({ getValue }) => (
+      <ElementName system="rms" name={getValue<string>()} />
+    ),
   },
   {
     id: "planned",
