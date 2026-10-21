@@ -42,7 +42,7 @@ export const ZoneItem = styled.div.attrs<{ $zoneGrid: ZonePlacementInfo }>(
 
 export const ElementSystems = styled.div`
 	flex: 1;
-  padding: ${tokens.spacings.comfortable.x_small};
+  padding: ${tokens.spacings.comfortable.small};
 
 	display: flex;
 	gap: ${tokens.spacings.comfortable.small};

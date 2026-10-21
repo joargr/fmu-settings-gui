@@ -329,7 +329,7 @@ export function ElementName({
   noSystemNameBorder?: boolean;
 }) {
   return (
-    <ElementSystem>
+    <ElementSystem $systemNameShown={showSystemName}>
       <ElementInfo>
         {showSystemName && (
           <ElementSystemName

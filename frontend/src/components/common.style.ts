@@ -43,12 +43,14 @@ function getColors(
 	`;
 }
 
-export const ElementSystem = styled.div`
+export const ElementSystem = styled.div<{
+  $systemNameShown?: boolean;
+}>`
+	display: inline grid;
   flex: 1;
-  padding: ${tokens.spacings.comfortable.x_small};
+  vertical-align: ${(props) => (props.$systemNameShown ? "100%" : undefined)} ;
 	border-radius: ${tokens.shape.corners.borderRadius};
 
-	display: grid;
 	align-items: center;
 `;
 
