@@ -38,9 +38,9 @@ export const PageText = styled(Typography).attrs<{
   $variant?: string;
   $marginTop?: string;
   $marginBottom?: string;
-  $hasElementName?: boolean;
-}>(({ $variant = "body_short", $hasElementName }) => {
-  if ($hasElementName) {
+  $hasDivContent?: boolean;
+}>(({ $variant = "body_short", $hasDivContent }) => {
+  if ($hasDivContent) {
     return { as: "div" };
   } else {
     return {

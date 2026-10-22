@@ -48,7 +48,7 @@ export const ElementSystem = styled.div<{
 }>`
   display: inline grid;
   flex: 1;
-  vertical-align: ${(props) => (props.$systemNameShown ? "100%" : undefined)} ;
+  vertical-align: ${(props) => (props.$systemNameShown ? "82%" : undefined)} ;
   border-radius: ${tokens.shape.corners.borderRadius};
 
   align-items: center;

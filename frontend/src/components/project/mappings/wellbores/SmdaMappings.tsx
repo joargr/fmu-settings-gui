@@ -173,7 +173,7 @@ function AutomaticMappingParameters({
         </PageText>
 
         <PageText
-          $hasElementName
+          $hasDivContent
           $marginTop={`-${tokens.spacings.comfortable.medium}`}
         >
           For example, ignoring RFT and NO lets{" "}
