@@ -315,18 +315,18 @@ export function SmdaHealthCheckInfo({
 
 export function ElementName({
   system,
-  name,
   aliases = [],
   isNoElement,
   showSystemName = false,
   noSystemNameBorder = false,
+  children,
 }: {
   system: DataSystem;
-  name: string;
   aliases?: string[];
   isNoElement?: ElementNameIsNoElement;
   showSystemName?: boolean;
   noSystemNameBorder?: boolean;
+  children?: ReactNode;
 }) {
   return (
     <ElementSystem $systemNameShown={showSystemName}>
@@ -344,7 +344,7 @@ export function ElementName({
           $isNoElement={isNoElement}
           $systemNameShown={showSystemName}
         >
-          {name}
+          {children}
           {aliases.length > 0 && (
             <Icon
               className="aliases"

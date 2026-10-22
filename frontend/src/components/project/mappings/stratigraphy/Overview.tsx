@@ -333,15 +333,15 @@ function Element({
       <ElementSystems>
         <ElementName
           system="rms"
-          name={elementMapping.name}
           aliases={elementMapping.aliases}
           showSystemName
           noSystemNameBorder={elementMapping.elementType === "zone"}
-        />
+        >
+          {elementMapping.name}
+        </ElementName>
 
         <ElementName
           system="smda"
-          name={getElementMappingTargetName(elementMapping, "smda")}
           isNoElement={
             elementMapping.targets.smda?.unmappable
               ? "warning"
@@ -351,7 +351,9 @@ function Element({
           }
           showSystemName
           noSystemNameBorder={elementMapping.elementType === "zone"}
-        />
+        >
+          {getElementMappingTargetName(elementMapping, "smda")}
+        </ElementName>
       </ElementSystems>
 
       {mappingData.canEdit && (

@@ -177,9 +177,15 @@ function AutomaticMappingParameters({
           $marginTop={`-${tokens.spacings.comfortable.medium}`}
         >
           For example, ignoring RFT and NO lets{" "}
-          <ElementName system="rms" name="RFT_55_33-A-2" showSystemName /> match{" "}
-          <ElementName system="smda" name="NO 55/33-A-2" showSystemName />. Only
-          the comparison is affected. The complete SMDA name is still saved.
+          <ElementName system="rms" showSystemName>
+            RFT_55_33-A-2
+          </ElementName>{" "}
+          match{" "}
+          <ElementName system="smda" showSystemName>
+            NO 55/33-A-2
+          </ElementName>
+          . Only the comparison is affected. The complete SMDA name is still
+          saved.
         </PageText>
 
         <PageText>
@@ -298,7 +304,7 @@ function AutomaticMappingDialog({
         header: "RMS",
         enableColumnFilter: false,
         cell: ({ getValue }) => (
-          <ElementName system="rms" name={getValue<string>()} />
+          <ElementName system="rms">{getValue<string>()}</ElementName>
         ),
       },
       {
@@ -308,9 +314,10 @@ function AutomaticMappingDialog({
         cell: ({ row }) => (
           <ElementName
             system="smda"
-            name={row.original.smdaLabel || emptyName}
             isNoElement={!row.original.smdaLabel ? "info" : undefined}
-          />
+          >
+            {row.original.smdaLabel || emptyName}
+          </ElementName>
         ),
       },
       {

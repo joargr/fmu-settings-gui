@@ -316,7 +316,7 @@ const wellboreMappingColumns: ColumnDef<ElementMapping>[] = [
     header: "RMS",
     size: 210,
     cell: ({ getValue }) => (
-      <ElementName system="rms" name={getValue<string>()} />
+      <ElementName system="rms">{getValue<string>()}</ElementName>
     ),
   },
   {
@@ -330,9 +330,10 @@ const wellboreMappingColumns: ColumnDef<ElementMapping>[] = [
       return (
         <ElementName
           system="simulator"
-          name={getValue<string>()}
           isNoElement={targetData?.name === "" ? "info" : undefined}
-        />
+        >
+          {getValue<string>()}
+        </ElementName>
       );
     },
   },
@@ -369,7 +370,6 @@ const wellboreMappingColumns: ColumnDef<ElementMapping>[] = [
       return (
         <ElementName
           system="smda"
-          name={getValue<string>()}
           isNoElement={
             targetData?.unmappable
               ? "warning"
@@ -377,7 +377,9 @@ const wellboreMappingColumns: ColumnDef<ElementMapping>[] = [
                 ? "info"
                 : undefined
           }
-        />
+        >
+          {getValue<string>()}
+        </ElementName>
       );
     },
   },

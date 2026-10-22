@@ -93,7 +93,7 @@ const storedWellboreColumns: ColumnDef<RmsWell>[] = [
     header: "Wellbore",
     size: 200,
     cell: ({ getValue }) => (
-      <ElementName system="rms" name={getValue<string>()} />
+      <ElementName system="rms">{getValue<string>()}</ElementName>
     ),
   },
   {
@@ -336,7 +336,7 @@ function WellboresEditor({
       header: "Wellbore",
       size: 200,
       cell: ({ getValue }) => (
-        <ElementName system="rms" name={getValue<string>()} />
+        <ElementName system="rms">{getValue<string>()}</ElementName>
       ),
     },
     {
