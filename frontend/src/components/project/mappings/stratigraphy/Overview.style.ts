@@ -47,6 +47,10 @@ export const ElementSystems = styled.div`
 	display: flex;
 	gap: ${tokens.spacings.comfortable.small};
 
+  & > div {
+    flex: 1;
+  }
+
   & > div:last-child > div {
     justify-self: right;
   }

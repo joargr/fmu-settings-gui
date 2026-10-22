@@ -47,7 +47,6 @@ export const ElementSystem = styled.div<{
   $systemNameShown?: boolean;
 }>`
   display: inline grid;
-  flex: 1;
   vertical-align: ${(props) => (props.$systemNameShown ? "82%" : undefined)} ;
   border-radius: ${tokens.shape.corners.borderRadius};
 
